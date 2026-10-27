@@ -8,7 +8,7 @@ Datum: 2026-10-27. 5018 författningar.
 - förordningar med lag: 1863
 - länkade hänvisningar %: 97.8
 - kommande upphävande: 4
-- paragraf som ännu inte trätt i kraft: 2037
+- paragraf som ännu inte trätt i kraft: 2049
 - tidigare lydelse utan datum (visas som tidigare): 85
 - träder i kraft när regeringen bestämmer: 374
 - upphävd paragraf (visas förminskad): 3582
@@ -60,7 +60,7 @@ Datum: 2026-10-27. 5018 författningar.
 - 2008:206 0:1
 - 2011:1159 0:3
 
-### paragraf som ännu inte trätt i kraft (2037)
+### paragraf som ännu inte trätt i kraft (2049)
 - 2009:1514 0:1
 - 1949:381 2:10
 - 1949:381 11:12 b

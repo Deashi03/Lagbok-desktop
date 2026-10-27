@@ -1,0 +1,98 @@
+[
+{
+"date": "2026-10-27",
+"sfs": "2017:193",
+"name": "Förordningen om statlig ersättning för asylsökande m.fl.",
+"new": false,
+"amendedBy": "2026:1825",
+"added": [],
+"changed": [
+[
+"0",
+"15"
+]
+],
+"removed": []
+},
+{
+"date": "2026-10-27",
+"sfs": "2017:80",
+"name": "Hälso- och sjukvårdsförordning",
+"new": false,
+"amendedBy": "2026:1805",
+"added": [
+[
+"5 a",
+"1"
+],
+[
+"5 a",
+"2"
+],
+[
+"5 a",
+"3"
+],
+[
+"5 b",
+"1"
+],
+[
+"5 b",
+"2"
+],
+[
+"5 b",
+"3"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-10-27",
+"sfs": "2025:468",
+"name": "Socialtjänstförordningen",
+"new": false,
+"amendedBy": "2026:1832",
+"added": [
+[
+"7",
+"3 a"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-10-27",
+"sfs": "2026:1524",
+"name": "Förordningen om statligt stöd till företag inom primärproduktion av jordbruksprodukter eller fiskeri- och vattenbruksprodukter för ökade kostnader med anledning av krisen i Mellanöstern",
+"new": false,
+"amendedBy": "2026:1807",
+"added": [
+[
+"0",
+"3 a"
+],
+[
+"0",
+"10 b"
+],
+[
+"0",
+"10 c"
+],
+[
+"0",
+"21 a"
+],
+[
+"0",
+"28 a"
+]
+],
+"changed": [],
+"removed": []
+}
+]
