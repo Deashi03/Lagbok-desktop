@@ -49,7 +49,7 @@
       "desktop": { "schemes": ["lagbok"] }
     },
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM2QTkxRTBFOEEzQkZEQjQKUldTMC9UdUtEaDZwTnBDTytqVXVjcHgxaXZHcm45amRxVUE5Nm5VeVRZVW01eEtJdE1zL1BVZGUK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg3Mzg4RjUxMTk5MTcwNkUKUldSdWNKRVpVWTg0aDRITHN0c2JGN01qZDVFYUxHSFVwNGZjMUtMV2tqU0kwSjh5UVFNa1RSVEQK",
       "endpoints": ["https://github.com/Deashi03/lagbok-desktop/releases/latest/download/latest.json"],
       "windows": { "installMode": "passive" }
     }
