@@ -1,7 +1,7 @@
 /* Lagbok Desktop: Lagboken som Windows-app (Tauri). Samma läsapp som Lagboken; Windows-delarna finns i desktop.js och src-tauri. */
 (function () {
   'use strict';
-  const APP_VERSION='1.0.0';
+  const APP_VERSION='1.1.0';
   // Lagbok Desktop körs i Windows-skalet; i en vanlig webbläsare (testerna) beter sig appen som Lagboken.
   const DESKTOP=!!window.LAGBOK_DESKTOP;
   const APP_NAME='Lagbok Desktop';
@@ -234,7 +234,7 @@
     const t=tree();
     const rows=state.catalog.filter(l=>(!sec.id||l.section===sec.id)&&!isNested(l)).map(law=>{
       const kids=t.kids.get(law.sfs)||[],regs=t.regs.get(law.sfs)||[];
-      if(!kids.length&&!regs.length)return lawRow(law);
+      if(!kids.length&&!regs.length)return '<div class="law-block">'+lawRow(law)+'</div>';
       const rows=[];
       for(const k of kids){rows.push([k,false]);for(const r of t.regs.get(k.sfs)||[])rows.push([r,true]);}
       for(const r of regs)rows.push([r,false]);
@@ -243,8 +243,8 @@
       const LIMIT=8,shown=rows.length>LIMIT+2?rows.slice(0,LIMIT):rows,hidden=rows.slice(shown.length);
       const more=hidden.length?'<details class="tree-more"><summary class="tree-row last"><span class="tree-branch" aria-hidden="true"></span><span class="grow"><span class="tree-title">Visa '+hidden.length+' till</span></span></summary>'+
         hidden.map(([l,deep],i)=>childRow(l,i===hidden.length-1,deep)).join('')+'</details>':'';
-      return listRow(law.name,lawSub(law)+' · '+counts,urlFor(law.sfs),law.sfs).replace('class="list-row"','class="list-row has-tree"')+
-        '<div class="law-tree" role="group" aria-label="Anslutande författningar till '+attr(law.name)+'">'+shown.map(([l,deep],i)=>childRow(l,!hidden.length&&i===shown.length-1,deep)).join('')+more+'</div>';
+      return '<div class="law-block">'+listRow(law.name,lawSub(law)+' · '+counts,urlFor(law.sfs),law.sfs).replace('class="list-row"','class="list-row has-tree"')+
+        '<div class="law-tree" role="group" aria-label="Anslutande författningar till '+attr(law.name)+'">'+shown.map(([l,deep],i)=>childRow(l,!hidden.length&&i===shown.length-1,deep)).join('')+more+'</div></div>';
     });
     return asList?rows:rows.join('');
   }
@@ -499,7 +499,8 @@
     });
   }
   function textHtml(text,meta,ch){
-    const paragraphs=String(text||'').replace(/\r\n?/g,'\n').replace(/[ \t]+\n/g,'\n').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
+    // "7--9 §§" i källan visas med tankstreck: "7–9 §§".
+    const paragraphs=String(text||'').replace(/(\d(?:\s?[a-z])?)\s*--\s*(\d)/g,'$1–$2').replace(/\r\n?/g,'\n').replace(/[ \t]+\n/g,'\n').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
     return paragraphs.map(p=>{
       const ordered=/^(\d{1,2})[.)]\s+([\s\S]*)$/.exec(p);
       if(ordered)return '<div class="legal-item"><span class="legal-item-number">'+html(ordered[1])+'.</span>'+
@@ -717,8 +718,54 @@
     const index=data.chapters.indexOf(ch),next=data.chapters[index+1];
     // Sök, penna och innehåll sitter i rubrikraden; här visas bara sökraden när den är öppen.
     const context=(state.focus?'<button type="button" class="focus-return" data-action="toggle-focus">Avsluta läsläge</button>':'')+findBar(meta);
-    return (context?'<div class="reader-context">'+context+'</div>':'')+
-      '<main class="law-reader reading-mode-'+html(pref.readingMode)+'">'+
+    const reader=readerMain(meta,data,ch,content,short,next);
+    // Bred layout (stort fönster): innehållet till vänster, lagtexten i mitten, kopplingarna till höger.
+    if(isWide()&&!state.focus){wideShown=null;}
+    if(isWide()&&!state.focus)return (context?'<div class="reader-context">'+context+'</div>':'')+
+      '<div class="wide-law"><nav class="wide-toc" aria-label="Innehåll"><div class="wide-toc-head"><span class="source-label">'+html(meta.name)+'</span></div>'+
+        '<div class="toc-results">'+tocEntries(meta,data,route(),'')+'</div></nav>'+reader+
+        '<aside class="wide-side" id="wide-side" aria-label="Kopplingar">'+wideSideHtml(meta.sfs,ch.number,state.visibleParagraph||route().paragraph)+'</aside></div>';
+    return (context?'<div class="reader-context">'+context+'</div>':'')+reader;
+  }
+  // Bred layout när fönstret är stort nog (inte i snabbpanelen). html[data-wide] styr stilarna.
+  const WIDE=1100;
+  function isWide(){return window.innerWidth>=WIDE&&document.documentElement.dataset.panel!=='true';}
+  function syncWide(){document.documentElement.dataset.wide=isWide()?'true':'false';}
+  syncWide();
+  let wideWas=isWide();
+  window.addEventListener('resize',()=>{
+    syncWide();
+    if(isWide()!==wideWas){wideWas=isWide();if(route().page==='law')renderKeep();}
+  });
+  // Högerspalten: paragrafen man läser, dess kopplingar och anteckning.
+  function wideSideHtml(sfs,cap,num){
+    const data=state.laws.get(sfs),ch=data&&data.chapters.find(c=>String(c.number)===String(cap));
+    const paras=ch?ch.items.filter(i=>i.type==='para'&&!i.repealed):[];
+    const item=(num&&paras.find(i=>searchCore.paraKey(i.number)===searchCore.paraKey(num)))||paras[0];
+    if(!item)return '';
+    const key=sfs+'|'+ch.number+'|'+item.number,title=tocModel.curatedTitle(sfs,ch.number,item.number)||'';
+    return '<div class="wide-side-head" data-key="'+attr(key)+'"><span class="source-label">Paragrafen du läser</span>'+
+      '<h2>'+html(numLabel(sfs,item.number,ch.number))+'</h2>'+(title?'<p>'+html(title)+'</p>':'')+'</div>'+
+      connectionsHtml(sfs,ch.number,item.number)+
+      '<div class="section-title">Anteckning</div>'+
+      (pref.notes[key]?'<button type="button" class="paragraph-note" data-action="note" data-key="'+attr(key)+'"><span class="note-label">Anteckning</span>'+html(pref.notes[key])+'</button>':
+        '<button type="button" class="button" data-action="note" data-key="'+attr(key)+'">Skriv anteckning</button>');
+  }
+  // När man läser vidare följer innehållet till vänster och högerspalten med.
+  let wideShown=null;
+  function updateWide(){
+    const side=$('#wide-side');if(!side)return;
+    const r=route(),num=state.visibleParagraph||r.paragraph,id=r.sfs+'|'+r.chapter+'|'+num;
+    if(id===wideShown)return;wideShown=id;
+    side.innerHTML=wideSideHtml(r.sfs,r.chapter,num);
+    const toc=$('.wide-toc');if(!toc)return;
+    $$('.toc-current',toc).forEach(a=>{a.classList.remove('toc-current');a.removeAttribute('aria-current');});
+    const here=$$('.toc-current-chapter + .toc-chapter-body .toc-paragraph',toc).find(a=>{const m=/\/([^/]+)$/.exec(a.getAttribute('href')||'');return m&&searchCore.paraKey(decodeURIComponent(m[1]))===searchCore.paraKey(num||'');});
+    if(here){here.classList.add('toc-current');here.setAttribute('aria-current','location');
+      const box=toc.getBoundingClientRect(),b=here.getBoundingClientRect();if(b.top<box.top+40||b.bottom>box.bottom-20)here.scrollIntoView({block:'center',behavior:'instant'});}
+  }
+  function readerMain(meta,data,ch,content,short,next){
+    return '<main class="law-reader reading-mode-'+html(pref.readingMode)+'">'+
       (state.atDate?'<div class="date-banner" role="status">◷ Visar lydelsen '+html(lawModel.formatDate(state.atDate))+' <button type="button" class="link-button" data-action="date-clear">Visa dagens</button> <button type="button" class="link-button" data-action="date-change">Byt datum</button></div>':'')+
       '<header class="reader-heading">'+(ch.division?'<div class="chapter-number division-label">'+html(ch.division)+'</div>':'')+'<h1>'+html(ch.title||(ch.number==='0'?meta.name:'Kapitel '+ch.number))+
         favStar(ch.number!=='0'?meta.sfs+'|'+ch.number:meta.sfs,ch.number!=='0'?'kapitlet':meta.type==='förordning'?'förordningen':'lagen')+'</h1>'+(hasRealChapters(data)?'':futureNotice(data)+repealNotice(data)+preambleHtml(data)+lawRelations(meta))+'</header>'+
@@ -1443,17 +1490,21 @@
       (parts.length?'<div class="law-reader collection-reader">'+parts.join('')+'</div>':'<div class="empty" style="margin-top:18px">Samlingen är tom. Lägg till paragrafer via menyn ⋯ vid en paragraf.</div>')+'</div>';
   }
   // ---------- 0.6: hänvisat från ----------
-  async function backlinksSheet(key){
-    const [sfs,cap,num]=key.split('|');
-    try{await loadLaw(sfs);}catch(_){}
+  // Kopplingar för en paragraf: kompletterande föreskrifter, vad den kompletterar och hänvisningar hit.
+  // Visas i menyn under paragrafen och, i den breda layouten, i högerspalten.
+  function connectionsHtml(sfs,cap,num){
     const list=(state.backlinks.get(sfs)||{})[cap+'|'+searchCore.paraKey(num)]||[];
     const rows=items=>'<div class="card-list">'+items.map(([s,c,n])=>listRow(shortRef(s,c,n)+((tocModel.curatedTitle(s,c,n))?' · '+tocModel.curatedTitle(s,c,n):''),(lawById(s)||{}).name||s,urlFor(s,c,searchCore.paraKey(n)))).join('')+'</div>';
     const reg=list.filter(e=>e[3]==='föreskrift'),comp=list.filter(e=>e[3]==='kompletterar'),refs=list.filter(e=>!e[3]||e[3]==='ref');
-    showSheet('<div class="sheet-title">Kopplingar för '+html(shortRef(sfs,cap,num))+' <button class="icon-button" data-action="close" aria-label="Stäng">×</button></div>'+
-      (reg.length?'<div class="section-title regulation-title">Kompletterande föreskrifter</div><p class="small muted">Förordningsparagrafer som fyller ut bestämmelsen.</p>'+rows(reg):'')+
+    return (reg.length?'<div class="section-title regulation-title">Kompletterande föreskrifter</div><p class="small muted">Förordningsparagrafer som fyller ut bestämmelsen.</p>'+rows(reg):'')+
       (comp.length?'<div class="section-title regulation-title">Kompletterar</div><p class="small muted">Lagparagrafer som den här föreskriften fyller ut.</p>'+rows(comp):'')+
       (refs.length?'<div class="section-title">Hänvisar hit</div>'+rows(refs):'')+
-      (!list.length?'<div class="empty">Inga kopplingar till andra paragrafer.</div>':''),false);
+      (!list.length?'<div class="empty">Inga kopplingar till andra paragrafer.</div>':'');
+  }
+  async function backlinksSheet(key){
+    const [sfs,cap,num]=key.split('|');
+    try{await loadLaw(sfs);}catch(_){}
+    showSheet('<div class="sheet-title">Kopplingar för '+html(shortRef(sfs,cap,num))+' <button class="icon-button" data-action="close" aria-label="Stäng">×</button></div>'+connectionsHtml(sfs,cap,num),false);
   }
   // ---------- 0.6: ändringsbevakning ----------
   function watchedLaws(){return Object.keys(pref.watch).filter(lawById);}
@@ -1814,6 +1865,7 @@
         if(el.getBoundingClientRect().bottom>top){
           state.visibleParagraph=el.dataset.paragraph;
           rememberPosition();
+          if(isWide())updateWide();
           break;
         }
       }
@@ -2123,9 +2175,42 @@
     if(!pref.tutorialDone&&window.LagbokTutorial&&!/[?&]notutorial\b/.test(location.search)&&document.documentElement.dataset.panel!=='true')
       window.LagbokTutorial.show(()=>{pref.tutorialDone=new Date().toISOString();savePrefs();});
   }
-  // Det Windows-delen (desktop.js) behöver: snabbkoder, navigering och favoriter/senaste för hopplistan.
+  // Källhänvisning som den skrivs i juridisk text: "3 kap. 8 § brottsbalken", "5 § lagen (1998:620) om belastningsregister".
+  function citation(id,cap,num){
+    const meta=lawById(id);if(!meta)return shortRef(id,cap,num);
+    const place=isArt(id,cap)?placeLabel(id,cap,num):(cap&&cap!=='0'?cap+' kap. ':'')+(num?num+' §':'');
+    let name=meta.name.charAt(0).toLowerCase()+meta.name.slice(1);
+    // Balkar och grundlagar citeras utan SFS-nummer, övriga med numret efter första ordet eller sist.
+    const plain=/\(\d{4}:\d+\)/.test(name)||/(?:balken|formen|ordningen|grundlagen|konventionen)$/.test(name);
+    if(!plain)name=/^(?:lagen|förordningen|kungörelsen) /.test(name)?name.replace(/^(\S+) /,'$1 ('+id+') '):name+' ('+id+')';
+    return (place?place+' ':'')+name;
+  }
+  // Rubrik för fönstret och aktivitetsfältet: "BrB 3:8", "Polislagen", "Sparat".
+  function currentTitle(){
+    const r=route(),meta=r.page==='law'?lawById(r.sfs):null;
+    if(meta)return r.chapter==null?meta.name:shortRef(meta.sfs,r.chapter,r.paragraph||null);
+    return ({saved:'Sparat',settings:'Inställningar',about:'Om',register:'Register',nytt:'Nytt i lagen',upcoming:'Kommande ändringar'})[r.page]||'';
+  }
+  // Förhandsvisning av en paragraf (desktop: när musen hålls över en hänvisning).
+  async function paragraphPreview(sfs,cap,num){
+    const doc=await loadLaw(sfs),ch=doc.chapters.find(c=>String(c.number)===String(cap));
+    const item=ch&&ch.items.find(i=>i.type==='para'&&searchCore.paraKey(i.number)===searchCore.paraKey(num));
+    if(!item)return null;
+    const meta=lawById(sfs),text=lawModel.resolve(item).current.text||'',title=tocModel.curatedTitle(sfs,ch.number,item.number)||'';
+    return '<div class="preview-head"><b>'+html(shortRef(sfs,ch.number,item.number))+'</b>'+(title?' · '+html(title):'')+'<span class="muted"> · '+html(meta?meta.name:sfs)+'</span></div>'+
+      (item.repealed?'<p class="muted">Upphävd.</p>':'<div class="paragraph-content">'+textHtml(text.length>1400?text.slice(0,1400).replace(/\s+\S*$/,'')+' …':text,meta,ch)+'</div>');
+  }
+  // Textstorlek med Ctrl + hjulet eller Ctrl + plus/minus (samma inställning som reglaget under Inställningar).
+  function fontStep(dir){
+    pref.fontSize=dir===0?1:Math.round(Math.min(1.5,Math.max(0.85,Number(pref.fontSize)+dir*0.05))*100)/100;
+    savePrefs();applyPrefs();toast('Textstorlek '+Math.round(pref.fontSize*100)+' %');
+  }
+  // Det Windows-delen (desktop.js) behöver: snabbkoder, navigering, favoriter/senaste för hopplistan med mera.
   window.LagbokApp={
-    goQuick,navigate,toast,
+    version:APP_VERSION,
+    goQuick,navigate,toast,showSheet,closeSheet,chapterStep,fontStep,currentTitle,paragraphPreview,
+    route:()=>route(),
+    citation:key=>{const [id,cap,num]=String(key).split('|');return citation(id,cap,num);},
     favourites:()=>pref.favourites.filter(t=>lawById(t.split('|')[0])).map(t=>({title:favTitle(t),hash:favRoute(t)})),
     recents:()=>pref.recents.filter(t=>lawById(t.split('|')[0])).map(t=>({title:favTitle(t),hash:favRoute(t)})),
     ready:()=>state.catalog.length>0

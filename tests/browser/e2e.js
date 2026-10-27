@@ -137,7 +137,19 @@ const B=process.env.LAGBOK_URL||'http://localhost:8765/';
  // Nytt i lagen
  await page.goto(B+'#/nytt');await wait(800);
  assert.match(await page.textContent('#view h1'),/Nytt i lagen/);
+ // Lagbok Desktop: källhänvisning och bred layout i stort fönster
+ assert.equal(await page.evaluate(()=>LagbokApp.citation('1962:700|3|8')),'3 kap. 8 § brottsbalken');
+ assert.equal(await page.evaluate(()=>LagbokApp.citation('1998:620|0|5')),'5 § lagen (1998:620) om belastningsregister');
+ assert.equal(await page.evaluate(()=>LagbokApp.citation('1984:387|0|10')),'10 § polislagen (1984:387)');
+ await page.setViewportSize({width:1600,height:1000});
+ await page.goto(B+'#/law/1962%3A700/3/8');await wait(1000);
+ assert.equal(await page.locator('.wide-toc .toc-current').count(),1,'innehållet till vänster markerar paragrafen');
+ assert.match(await page.textContent('#wide-side'),/8 §[\s\S]*Hänvisar hit[\s\S]*BrB 3:10/);
+ assert.match(await page.textContent('#p-10'),/7–9/,'"7--9" visas med tankstreck');
+ await page.goto(B+'#/catalog');await wait(800);
+ assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.cat-section[open] .card-list')).columnCount),'2');
+ await page.setViewportSize({width:390,height:844});
  assert.deepEqual(errors,[]);
- console.log('Webbläsartest: katalog, kopplingar, meny, sök, penna, ångra, snabbhopp, Sparat, introduktion, favoriter, anslutande förordningar, Om Lagboken, intervall, snabbkoder, konventioner, sökpilar, lydelse vid datum och Nytt i lagen godkända');
+ console.log('Webbläsartest: katalog, kopplingar, meny, sök, penna, ångra, snabbhopp, Sparat, introduktion, favoriter, anslutande förordningar, Om Lagboken, intervall, snabbkoder, konventioner, sökpilar, lydelse vid datum, Nytt i lagen och bred layout godkända');
  await browser.close();
 })().catch(e=>{console.error(e);process.exitCode=1;});

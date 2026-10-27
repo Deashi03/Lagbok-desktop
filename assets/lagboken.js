@@ -951,7 +951,7 @@
 /* Lagbok Desktop: Lagboken som Windows-app (Tauri). Samma läsapp som Lagboken; Windows-delarna finns i desktop.js och src-tauri. */
 (function () {
   'use strict';
-  const APP_VERSION='1.0.0';
+  const APP_VERSION='1.1.0';
   // Lagbok Desktop körs i Windows-skalet; i en vanlig webbläsare (testerna) beter sig appen som Lagboken.
   const DESKTOP=!!window.LAGBOK_DESKTOP;
   const APP_NAME='Lagbok Desktop';
@@ -1184,7 +1184,7 @@
     const t=tree();
     const rows=state.catalog.filter(l=>(!sec.id||l.section===sec.id)&&!isNested(l)).map(law=>{
       const kids=t.kids.get(law.sfs)||[],regs=t.regs.get(law.sfs)||[];
-      if(!kids.length&&!regs.length)return lawRow(law);
+      if(!kids.length&&!regs.length)return '<div class="law-block">'+lawRow(law)+'</div>';
       const rows=[];
       for(const k of kids){rows.push([k,false]);for(const r of t.regs.get(k.sfs)||[])rows.push([r,true]);}
       for(const r of regs)rows.push([r,false]);
@@ -1193,8 +1193,8 @@
       const LIMIT=8,shown=rows.length>LIMIT+2?rows.slice(0,LIMIT):rows,hidden=rows.slice(shown.length);
       const more=hidden.length?'<details class="tree-more"><summary class="tree-row last"><span class="tree-branch" aria-hidden="true"></span><span class="grow"><span class="tree-title">Visa '+hidden.length+' till</span></span></summary>'+
         hidden.map(([l,deep],i)=>childRow(l,i===hidden.length-1,deep)).join('')+'</details>':'';
-      return listRow(law.name,lawSub(law)+' · '+counts,urlFor(law.sfs),law.sfs).replace('class="list-row"','class="list-row has-tree"')+
-        '<div class="law-tree" role="group" aria-label="Anslutande författningar till '+attr(law.name)+'">'+shown.map(([l,deep],i)=>childRow(l,!hidden.length&&i===shown.length-1,deep)).join('')+more+'</div>';
+      return '<div class="law-block">'+listRow(law.name,lawSub(law)+' · '+counts,urlFor(law.sfs),law.sfs).replace('class="list-row"','class="list-row has-tree"')+
+        '<div class="law-tree" role="group" aria-label="Anslutande författningar till '+attr(law.name)+'">'+shown.map(([l,deep],i)=>childRow(l,!hidden.length&&i===shown.length-1,deep)).join('')+more+'</div></div>';
     });
     return asList?rows:rows.join('');
   }
@@ -1449,7 +1449,8 @@
     });
   }
   function textHtml(text,meta,ch){
-    const paragraphs=String(text||'').replace(/\r\n?/g,'\n').replace(/[ \t]+\n/g,'\n').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
+    // "7--9 §§" i källan visas med tankstreck: "7–9 §§".
+    const paragraphs=String(text||'').replace(/(\d(?:\s?[a-z])?)\s*--\s*(\d)/g,'$1–$2').replace(/\r\n?/g,'\n').replace(/[ \t]+\n/g,'\n').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
     return paragraphs.map(p=>{
       const ordered=/^(\d{1,2})[.)]\s+([\s\S]*)$/.exec(p);
       if(ordered)return '<div class="legal-item"><span class="legal-item-number">'+html(ordered[1])+'.</span>'+
@@ -1667,8 +1668,54 @@
     const index=data.chapters.indexOf(ch),next=data.chapters[index+1];
     // Sök, penna och innehåll sitter i rubrikraden; här visas bara sökraden när den är öppen.
     const context=(state.focus?'<button type="button" class="focus-return" data-action="toggle-focus">Avsluta läsläge</button>':'')+findBar(meta);
-    return (context?'<div class="reader-context">'+context+'</div>':'')+
-      '<main class="law-reader reading-mode-'+html(pref.readingMode)+'">'+
+    const reader=readerMain(meta,data,ch,content,short,next);
+    // Bred layout (stort fönster): innehållet till vänster, lagtexten i mitten, kopplingarna till höger.
+    if(isWide()&&!state.focus){wideShown=null;}
+    if(isWide()&&!state.focus)return (context?'<div class="reader-context">'+context+'</div>':'')+
+      '<div class="wide-law"><nav class="wide-toc" aria-label="Innehåll"><div class="wide-toc-head"><span class="source-label">'+html(meta.name)+'</span></div>'+
+        '<div class="toc-results">'+tocEntries(meta,data,route(),'')+'</div></nav>'+reader+
+        '<aside class="wide-side" id="wide-side" aria-label="Kopplingar">'+wideSideHtml(meta.sfs,ch.number,state.visibleParagraph||route().paragraph)+'</aside></div>';
+    return (context?'<div class="reader-context">'+context+'</div>':'')+reader;
+  }
+  // Bred layout när fönstret är stort nog (inte i snabbpanelen). html[data-wide] styr stilarna.
+  const WIDE=1100;
+  function isWide(){return window.innerWidth>=WIDE&&document.documentElement.dataset.panel!=='true';}
+  function syncWide(){document.documentElement.dataset.wide=isWide()?'true':'false';}
+  syncWide();
+  let wideWas=isWide();
+  window.addEventListener('resize',()=>{
+    syncWide();
+    if(isWide()!==wideWas){wideWas=isWide();if(route().page==='law')renderKeep();}
+  });
+  // Högerspalten: paragrafen man läser, dess kopplingar och anteckning.
+  function wideSideHtml(sfs,cap,num){
+    const data=state.laws.get(sfs),ch=data&&data.chapters.find(c=>String(c.number)===String(cap));
+    const paras=ch?ch.items.filter(i=>i.type==='para'&&!i.repealed):[];
+    const item=(num&&paras.find(i=>searchCore.paraKey(i.number)===searchCore.paraKey(num)))||paras[0];
+    if(!item)return '';
+    const key=sfs+'|'+ch.number+'|'+item.number,title=tocModel.curatedTitle(sfs,ch.number,item.number)||'';
+    return '<div class="wide-side-head" data-key="'+attr(key)+'"><span class="source-label">Paragrafen du läser</span>'+
+      '<h2>'+html(numLabel(sfs,item.number,ch.number))+'</h2>'+(title?'<p>'+html(title)+'</p>':'')+'</div>'+
+      connectionsHtml(sfs,ch.number,item.number)+
+      '<div class="section-title">Anteckning</div>'+
+      (pref.notes[key]?'<button type="button" class="paragraph-note" data-action="note" data-key="'+attr(key)+'"><span class="note-label">Anteckning</span>'+html(pref.notes[key])+'</button>':
+        '<button type="button" class="button" data-action="note" data-key="'+attr(key)+'">Skriv anteckning</button>');
+  }
+  // När man läser vidare följer innehållet till vänster och högerspalten med.
+  let wideShown=null;
+  function updateWide(){
+    const side=$('#wide-side');if(!side)return;
+    const r=route(),num=state.visibleParagraph||r.paragraph,id=r.sfs+'|'+r.chapter+'|'+num;
+    if(id===wideShown)return;wideShown=id;
+    side.innerHTML=wideSideHtml(r.sfs,r.chapter,num);
+    const toc=$('.wide-toc');if(!toc)return;
+    $$('.toc-current',toc).forEach(a=>{a.classList.remove('toc-current');a.removeAttribute('aria-current');});
+    const here=$$('.toc-current-chapter + .toc-chapter-body .toc-paragraph',toc).find(a=>{const m=/\/([^/]+)$/.exec(a.getAttribute('href')||'');return m&&searchCore.paraKey(decodeURIComponent(m[1]))===searchCore.paraKey(num||'');});
+    if(here){here.classList.add('toc-current');here.setAttribute('aria-current','location');
+      const box=toc.getBoundingClientRect(),b=here.getBoundingClientRect();if(b.top<box.top+40||b.bottom>box.bottom-20)here.scrollIntoView({block:'center',behavior:'instant'});}
+  }
+  function readerMain(meta,data,ch,content,short,next){
+    return '<main class="law-reader reading-mode-'+html(pref.readingMode)+'">'+
       (state.atDate?'<div class="date-banner" role="status">◷ Visar lydelsen '+html(lawModel.formatDate(state.atDate))+' <button type="button" class="link-button" data-action="date-clear">Visa dagens</button> <button type="button" class="link-button" data-action="date-change">Byt datum</button></div>':'')+
       '<header class="reader-heading">'+(ch.division?'<div class="chapter-number division-label">'+html(ch.division)+'</div>':'')+'<h1>'+html(ch.title||(ch.number==='0'?meta.name:'Kapitel '+ch.number))+
         favStar(ch.number!=='0'?meta.sfs+'|'+ch.number:meta.sfs,ch.number!=='0'?'kapitlet':meta.type==='förordning'?'förordningen':'lagen')+'</h1>'+(hasRealChapters(data)?'':futureNotice(data)+repealNotice(data)+preambleHtml(data)+lawRelations(meta))+'</header>'+
@@ -2393,17 +2440,21 @@
       (parts.length?'<div class="law-reader collection-reader">'+parts.join('')+'</div>':'<div class="empty" style="margin-top:18px">Samlingen är tom. Lägg till paragrafer via menyn ⋯ vid en paragraf.</div>')+'</div>';
   }
   // ---------- 0.6: hänvisat från ----------
-  async function backlinksSheet(key){
-    const [sfs,cap,num]=key.split('|');
-    try{await loadLaw(sfs);}catch(_){}
+  // Kopplingar för en paragraf: kompletterande föreskrifter, vad den kompletterar och hänvisningar hit.
+  // Visas i menyn under paragrafen och, i den breda layouten, i högerspalten.
+  function connectionsHtml(sfs,cap,num){
     const list=(state.backlinks.get(sfs)||{})[cap+'|'+searchCore.paraKey(num)]||[];
     const rows=items=>'<div class="card-list">'+items.map(([s,c,n])=>listRow(shortRef(s,c,n)+((tocModel.curatedTitle(s,c,n))?' · '+tocModel.curatedTitle(s,c,n):''),(lawById(s)||{}).name||s,urlFor(s,c,searchCore.paraKey(n)))).join('')+'</div>';
     const reg=list.filter(e=>e[3]==='föreskrift'),comp=list.filter(e=>e[3]==='kompletterar'),refs=list.filter(e=>!e[3]||e[3]==='ref');
-    showSheet('<div class="sheet-title">Kopplingar för '+html(shortRef(sfs,cap,num))+' <button class="icon-button" data-action="close" aria-label="Stäng">×</button></div>'+
-      (reg.length?'<div class="section-title regulation-title">Kompletterande föreskrifter</div><p class="small muted">Förordningsparagrafer som fyller ut bestämmelsen.</p>'+rows(reg):'')+
+    return (reg.length?'<div class="section-title regulation-title">Kompletterande föreskrifter</div><p class="small muted">Förordningsparagrafer som fyller ut bestämmelsen.</p>'+rows(reg):'')+
       (comp.length?'<div class="section-title regulation-title">Kompletterar</div><p class="small muted">Lagparagrafer som den här föreskriften fyller ut.</p>'+rows(comp):'')+
       (refs.length?'<div class="section-title">Hänvisar hit</div>'+rows(refs):'')+
-      (!list.length?'<div class="empty">Inga kopplingar till andra paragrafer.</div>':''),false);
+      (!list.length?'<div class="empty">Inga kopplingar till andra paragrafer.</div>':'');
+  }
+  async function backlinksSheet(key){
+    const [sfs,cap,num]=key.split('|');
+    try{await loadLaw(sfs);}catch(_){}
+    showSheet('<div class="sheet-title">Kopplingar för '+html(shortRef(sfs,cap,num))+' <button class="icon-button" data-action="close" aria-label="Stäng">×</button></div>'+connectionsHtml(sfs,cap,num),false);
   }
   // ---------- 0.6: ändringsbevakning ----------
   function watchedLaws(){return Object.keys(pref.watch).filter(lawById);}
@@ -2764,6 +2815,7 @@
         if(el.getBoundingClientRect().bottom>top){
           state.visibleParagraph=el.dataset.paragraph;
           rememberPosition();
+          if(isWide())updateWide();
           break;
         }
       }
@@ -3073,9 +3125,42 @@
     if(!pref.tutorialDone&&window.LagbokTutorial&&!/[?&]notutorial\b/.test(location.search)&&document.documentElement.dataset.panel!=='true')
       window.LagbokTutorial.show(()=>{pref.tutorialDone=new Date().toISOString();savePrefs();});
   }
-  // Det Windows-delen (desktop.js) behöver: snabbkoder, navigering och favoriter/senaste för hopplistan.
+  // Källhänvisning som den skrivs i juridisk text: "3 kap. 8 § brottsbalken", "5 § lagen (1998:620) om belastningsregister".
+  function citation(id,cap,num){
+    const meta=lawById(id);if(!meta)return shortRef(id,cap,num);
+    const place=isArt(id,cap)?placeLabel(id,cap,num):(cap&&cap!=='0'?cap+' kap. ':'')+(num?num+' §':'');
+    let name=meta.name.charAt(0).toLowerCase()+meta.name.slice(1);
+    // Balkar och grundlagar citeras utan SFS-nummer, övriga med numret efter första ordet eller sist.
+    const plain=/\(\d{4}:\d+\)/.test(name)||/(?:balken|formen|ordningen|grundlagen|konventionen)$/.test(name);
+    if(!plain)name=/^(?:lagen|förordningen|kungörelsen) /.test(name)?name.replace(/^(\S+) /,'$1 ('+id+') '):name+' ('+id+')';
+    return (place?place+' ':'')+name;
+  }
+  // Rubrik för fönstret och aktivitetsfältet: "BrB 3:8", "Polislagen", "Sparat".
+  function currentTitle(){
+    const r=route(),meta=r.page==='law'?lawById(r.sfs):null;
+    if(meta)return r.chapter==null?meta.name:shortRef(meta.sfs,r.chapter,r.paragraph||null);
+    return ({saved:'Sparat',settings:'Inställningar',about:'Om',register:'Register',nytt:'Nytt i lagen',upcoming:'Kommande ändringar'})[r.page]||'';
+  }
+  // Förhandsvisning av en paragraf (desktop: när musen hålls över en hänvisning).
+  async function paragraphPreview(sfs,cap,num){
+    const doc=await loadLaw(sfs),ch=doc.chapters.find(c=>String(c.number)===String(cap));
+    const item=ch&&ch.items.find(i=>i.type==='para'&&searchCore.paraKey(i.number)===searchCore.paraKey(num));
+    if(!item)return null;
+    const meta=lawById(sfs),text=lawModel.resolve(item).current.text||'',title=tocModel.curatedTitle(sfs,ch.number,item.number)||'';
+    return '<div class="preview-head"><b>'+html(shortRef(sfs,ch.number,item.number))+'</b>'+(title?' · '+html(title):'')+'<span class="muted"> · '+html(meta?meta.name:sfs)+'</span></div>'+
+      (item.repealed?'<p class="muted">Upphävd.</p>':'<div class="paragraph-content">'+textHtml(text.length>1400?text.slice(0,1400).replace(/\s+\S*$/,'')+' …':text,meta,ch)+'</div>');
+  }
+  // Textstorlek med Ctrl + hjulet eller Ctrl + plus/minus (samma inställning som reglaget under Inställningar).
+  function fontStep(dir){
+    pref.fontSize=dir===0?1:Math.round(Math.min(1.5,Math.max(0.85,Number(pref.fontSize)+dir*0.05))*100)/100;
+    savePrefs();applyPrefs();toast('Textstorlek '+Math.round(pref.fontSize*100)+' %');
+  }
+  // Det Windows-delen (desktop.js) behöver: snabbkoder, navigering, favoriter/senaste för hopplistan med mera.
   window.LagbokApp={
-    goQuick,navigate,toast,
+    version:APP_VERSION,
+    goQuick,navigate,toast,showSheet,closeSheet,chapterStep,fontStep,currentTitle,paragraphPreview,
+    route:()=>route(),
+    citation:key=>{const [id,cap,num]=String(key).split('|');return citation(id,cap,num);},
     favourites:()=>pref.favourites.filter(t=>lawById(t.split('|')[0])).map(t=>({title:favTitle(t),hash:favRoute(t)})),
     recents:()=>pref.recents.filter(t=>lawById(t.split('|')[0])).map(t=>({title:favTitle(t),hash:favRoute(t)})),
     ready:()=>state.catalog.length>0
@@ -3084,9 +3169,11 @@
 })();
 ;
 // ---- desktop.js ----
-/* Lagbok Desktop 1.0 – Windows-delen av webbappen. Pratar med skalet i src-tauri:
-   snabbpanelen (Ctrl + Alt + L), Lagbok-länkar (lagbok://), hopplistan i aktivitetsfältet, externa länkar,
-   uppdateringar och Windows-inställningarna under Inställningar. Gör ingenting i en vanlig webbläsare. */
+/* Lagbok Desktop 1.1 – Windows-delen av webbappen. Pratar med skalet i src-tauri:
+   snabbpanelen (kortkommando, slå upp markerad text), Lagbok-länkar (lagbok://), hopplistan, externa länkar,
+   fönstertiteln, uppdateringar och Windows-inställningarna. Dessutom det som hör datorn till: kortkommandon i
+   appen, musens bakåt/framåt, förhandsvisning av hänvisningar, högerklick på paragrafer och kopiering med källa.
+   Gör ingenting i en vanlig webbläsare. */
 (function(){
   'use strict';
   if(!window.LAGBOK_DESKTOP||!window.__TAURI__)return;
@@ -3095,6 +3182,12 @@
   const panel=document.documentElement.dataset.panel==='true';
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const whenReady=fn=>{const tick=()=>app()&&app().ready()?fn():setTimeout(tick,50);tick();};
+  const sheetOpen=()=>{const s=document.getElementById('sheet');return !!s&&!s.hidden;};
+  const typing=e=>{const t=e.target;return !!t&&(/^(?:INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable);};
+  // Egna val för Windows-delen (per dator, i webbdelens lagring).
+  const local=(()=>{let v={};try{v=JSON.parse(localStorage.getItem('lagboken-desktop')||'{}');}catch(_){}return v;})();
+  const saveLocal=()=>{try{localStorage.setItem('lagboken-desktop',JSON.stringify(local));}catch(_){}};
+  if(local.copyCitation===undefined)local.copyCitation=true;
 
   // Länkar till webbsidor och e-post öppnas i Windows standardprogram, inte inne i appen.
   document.addEventListener('click',e=>{
@@ -3103,7 +3196,7 @@
     if(/^(?:https?:|mailto:)/i.test(href)){e.preventDefault();e.stopPropagation();invoke('open_external',{url:a.href}).catch(()=>{});}
   },true);
 
-  // Lagbok-länkar: lagbok://go/<adress i appen> (hopplistan) eller lagbok://BrB/3/8 och lagbok://BrB 3:8 (snabbkod).
+  // ---- Lagbok-länkar: lagbok://go/<adress i appen> (hopplistan) eller lagbok://BrB/3/8 och lagbok://BrB 3:8 ----
   function openLink(url){
     const rest=decodeURIComponent(String(url).replace(/^lagbok:\/*/i,'')).replace(/\/+$/,'');
     if(/^go\//i.test(rest)){location.hash=rest.slice(3);return;}
@@ -3112,20 +3205,19 @@
   }
   // Skalet sparar länken tills den hämtas, så att en länk som startade appen inte går förlorad.
   const takeLink=()=>invoke('take_pending_link').then(url=>{if(url)openLink(url);}).catch(()=>{});
-  if(!panel){listen('deep-link',takeLink);takeLink();}
-  if(!panel)listen('open-hash',e=>{location.hash=e.payload;});
+  if(!panel){listen('deep-link',takeLink);takeLink();listen('open-hash',e=>{location.hash=e.payload;});}
 
   // ---- Snabbpanelen ----
   if(panel){
     // Esc döljer panelen när ingen meny är öppen; menyer stängs först som vanligt.
     document.addEventListener('keydown',e=>{
-      if(e.key!=='Escape')return;
-      const sheet=document.getElementById('sheet');
-      if(sheet&&!sheet.hidden)return;
+      if(e.key!=='Escape'||sheetOpen()||document.getElementById('hl-pop'))return;
+      if(typing(e)&&e.target.value){return;}
       invoke('hide_panel').catch(()=>{});
     });
-    // Två knappar i rubrikraden: öppna det som visas i huvudfönstret, och dölj panelen.
-    const actions=document.querySelector('.top-actions');
+    // Rubrikraden är fönstrets dragrad; två knappar: öppna det som visas i huvudfönstret, och dölj panelen.
+    const bar=document.querySelector('.topbar'),actions=document.querySelector('.top-actions');
+    if(bar){bar.setAttribute('data-tauri-drag-region','');const title=document.getElementById('top-title');if(title)title.setAttribute('data-tauri-drag-region','');}
     if(actions){
       const open=document.createElement('button');open.type='button';open.className='icon-button';open.id='panel-open-main';
       open.setAttribute('aria-label','Öppna i Lagbok Desktop');open.title='Öppna i huvudfönstret';open.textContent='⤢';
@@ -3135,37 +3227,116 @@
       close.addEventListener('click',()=>invoke('hide_panel').catch(()=>{}));
       actions.append(open,close);
     }
-    // När panelen visas: sökfältet är redo att skriva i.
-    const focusSearch=()=>{
-      const q=document.getElementById('query');
-      if(q){q.focus();q.select();return;}
-      const jump=document.getElementById('in-law-search');if(jump)jump.click();
-      setTimeout(()=>{const j=document.getElementById('jump-query');if(j)j.focus();},60);
+    // Panelen visar samma sida som när man lämnade den. Bara på startsidan får sökfältet markören direkt.
+    // Var något markerat i programmet man stod i öppnas det lagrummet i stället.
+    const shown=lookup=>whenReady(()=>{
+      if(lookup){app().goQuick(lookup).then(ok=>{if(!ok)focusStart();});return;}
+      focusStart();
+    });
+    const focusStart=()=>{
+      if(!['catalog','home','search'].includes(app().route().page))return;
+      let n=0;const tryFocus=()=>{const q=document.getElementById('query');
+        if(q&&document.activeElement===q&&document.hasFocus())return;
+        if(q&&!sheetOpen())q.focus({preventScroll:true});if(++n<8)setTimeout(tryFocus,80);};
+      tryFocus();
     };
-    // Fönstret får fokus en stund efter att det visats; därför flera försök tills sökfältet har markören.
-    const focusSoon=()=>{let n=0;const tryFocus=()=>{const q=document.getElementById('query');
-      if(q&&document.activeElement===q&&document.hasFocus())return;
-      if(n++===0||q)focusSearch();if(n<8)setTimeout(tryFocus,80);};tryFocus();};
-    // Signalen från skalet, och som reserv: när fönstret blir synligt eller laddas medan det syns.
-    listen('panel-shown',()=>whenReady(focusSoon));
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')whenReady(focusSoon);});
-    whenReady(()=>{if(document.visibilityState==='visible'&&document.hasFocus())focusSoon();});
+    listen('panel-shown',e=>shown(e.payload));
+    // Reserv om sidan läses in först när panelen visas första gången (då hinner signalen gå förbi).
+    whenReady(()=>{if(document.visibilityState==='visible')focusStart();});
+    window.addEventListener('focus',()=>{if(!window.__panelFocused){window.__panelFocused=true;whenReady(focusStart);}});
   }
 
-  // ---- Hopplistan: favoriter och senast lästa när man högerklickar på ikonen i aktivitetsfältet ----
-  let lastJump='';
-  function updateJumpList(){
-    if(panel||!app()||!app().ready())return;
-    const pick=list=>list.slice(0,6).map(x=>({title:x.title,url:'lagbok://go/'+encodeURIComponent(x.hash)}));
-    const items={favourites:pick(app().favourites()),recents:pick(app().recents())};
-    const json=JSON.stringify(items);if(json===lastJump)return;lastJump=json;
-    invoke('set_jump_list',items).catch(()=>{});
+  // ---- Kortkommandon i appen (huvudfönstret och panelen) ----
+  document.addEventListener('keydown',e=>{
+    const ctrl=e.ctrlKey&&!e.altKey&&!e.metaKey,a=app();if(!a)return;
+    if(ctrl&&!e.shiftKey&&e.key.toLowerCase()==='k'){e.preventDefault();a.closeSheet();const b=document.getElementById('in-law-search');if(b)b.click();return;}
+    if(ctrl&&!e.shiftKey&&e.key.toLowerCase()==='f'){
+      e.preventDefault();a.closeSheet();
+      const find=document.getElementById('find-button'),open=document.getElementById('find-input');
+      if(open){open.focus();open.select();}
+      else if(find&&!find.hidden){find.click();setTimeout(()=>{const f=document.getElementById('find-input');if(f){f.focus();f.select();}},80);}
+      else{const q=document.getElementById('query');if(q){q.focus();q.select();}else{const b=document.getElementById('in-law-search');if(b)b.click();}}
+      return;
+    }
+    if(ctrl&&(e.key==='+'||e.key==='='||e.key==='-'||e.key==='0')){e.preventDefault();a.fontStep(e.key==='-'?-1:e.key==='0'?0:1);return;}
+    if(ctrl&&(e.key==='PageDown'||e.key==='PageUp')){e.preventDefault();a.chapterStep(e.key==='PageDown'?1:-1);return;}
+    if(e.altKey&&!e.ctrlKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!typing(e)){e.preventDefault();history[e.key==='ArrowLeft'?'back':'forward']();}
+  });
+  // Musens bakåt- och framåtknappar.
+  window.addEventListener('mouseup',e=>{if(e.button===3||e.button===4){e.preventDefault();history[e.button===3?'back':'forward']();}});
+  // Ctrl + hjulet ändrar textstorleken (i stället för att zooma hela fönstret).
+  window.addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();
+    const now=Date.now();if(now-(window.__wheelAt||0)<120)return;window.__wheelAt=now;app()&&app().fontStep(e.deltaY<0?1:-1);},{passive:false});
+
+  // ---- Högerklick på en paragraf: samma meny som ⋯ (kopiera, kopiera med hänvisning, spara, anteckna …) ----
+  // Med text markerad visas Windows vanliga meny, så att man kan kopiera markeringen.
+  document.addEventListener('contextmenu',e=>{
+    const para=e.target.closest&&e.target.closest('article.paragraph[data-key]');if(!para)return;
+    const sel=window.getSelection();if(sel&&!sel.isCollapsed&&para.contains(sel.anchorNode))return;
+    if(e.target.closest('a,button,input,textarea'))return;
+    const menu=para.querySelector('[data-action="para-menu"]');if(!menu)return;
+    e.preventDefault();menu.click();
+  });
+
+  // ---- Kopiera lagtext med källa: markerad text får "(3 kap. 8 § brottsbalken)" efter sig ----
+  document.addEventListener('copy',e=>{
+    if(!local.copyCitation||!e.clipboardData||!app())return;
+    const sel=window.getSelection();if(!sel||sel.isCollapsed)return;
+    const node=sel.anchorNode&&(sel.anchorNode.nodeType===1?sel.anchorNode:sel.anchorNode.parentElement);
+    const para=node&&node.closest&&node.closest('article.paragraph[data-key]');
+    if(!para||!para.contains(sel.focusNode))return;
+    const text=sel.toString().trim();if(!text)return;
+    e.clipboardData.setData('text/plain',text+' ('+app().citation(para.dataset.key)+')');
+    e.preventDefault();
+  });
+
+  // ---- Förhandsvisning: håll musen över en hänvisning så visas paragrafens text ----
+  let tip=null,tipTimer=null,tipFor=null;
+  const hideTip=()=>{clearTimeout(tipTimer);tipTimer=null;tipFor=null;if(tip)tip.hidden=true;};
+  function placeTip(link){
+    const r=link.getBoundingClientRect(),w=Math.min(460,window.innerWidth-24);
+    tip.style.width=w+'px';
+    const left=Math.max(12,Math.min(r.left,window.innerWidth-w-12));
+    tip.style.left=left+'px';
+    const below=window.innerHeight-r.bottom>260||r.top<260;
+    tip.style.top=below?(r.bottom+8)+'px':'';tip.style.bottom=below?'':(window.innerHeight-r.top+8)+'px';
+    tip.style.maxHeight=Math.max(160,(below?window.innerHeight-r.bottom:r.top)-24)+'px';
   }
-  let jumpTimer=null;
-  const scheduleJump=()=>{clearTimeout(jumpTimer);jumpTimer=setTimeout(updateJumpList,1500);};
-  window.addEventListener('hashchange',scheduleJump);
-  document.addEventListener('click',scheduleJump);
-  whenReady(scheduleJump);
+  document.addEventListener('mouseover',e=>{
+    const link=e.target.closest&&e.target.closest('a.law-ref[data-ref-para]');
+    if(!link){if(tip&&tip.contains(e.target)){clearTimeout(tipTimer);return;}if(tipFor&&!tipTimer)return;
+      if(tipFor){clearTimeout(tipTimer);tipTimer=setTimeout(hideTip,250);}return;}
+    if(link===tipFor){clearTimeout(tipTimer);tipTimer=null;return;}
+    hideTip();tipFor=link;
+    tipTimer=setTimeout(()=>{
+      tipTimer=null;const d=link.dataset;
+      app().paragraphPreview(d.refSfs,d.refChapter,d.refPara).then(markup=>{
+        if(tipFor!==link||!markup)return;
+        if(!tip){tip=document.createElement('div');tip.className='ref-preview';tip.setAttribute('role','tooltip');document.body.appendChild(tip);
+          tip.addEventListener('mouseleave',()=>{tipTimer=setTimeout(hideTip,250);});}
+        tip.innerHTML=markup+(d.refTo?'<p class="small muted">Visar första paragrafen i intervallet.</p>':'');
+        tip.hidden=false;placeTip(link);
+      }).catch(()=>{});
+    },450);
+  });
+  ['scroll','keydown','mousedown'].forEach(t=>window.addEventListener(t,e=>{if(tip&&!tip.hidden&&!(t==='mousedown'&&tip.contains(e.target)))hideTip();},true));
+  window.addEventListener('hashchange',hideTip);
+
+  // ---- Fönstrets titel och hopplistan följer det man läser ----
+  let lastTitle='',lastJump='',followTimer=null;
+  function follow(){
+    const a=app();if(panel||!a||!a.ready())return;
+    const t=a.currentTitle(),title=t?t+' – Lagbok Desktop':'Lagbok Desktop';
+    if(title!==lastTitle){lastTitle=title;document.title=title;invoke('set_title',{title}).catch(()=>{});}
+    const pick=list=>list.slice(0,6).map(x=>({title:x.title,url:'lagbok://go/'+encodeURIComponent(x.hash)}));
+    const items={favourites:pick(a.favourites()),recents:pick(a.recents())};
+    const json=JSON.stringify(items);
+    if(json!==lastJump){lastJump=json;invoke('set_jump_list',items).catch(()=>{});}
+  }
+  const scheduleFollow=()=>{clearTimeout(followTimer);followTimer=setTimeout(follow,400);};
+  window.addEventListener('hashchange',scheduleFollow);
+  document.addEventListener('click',scheduleFollow);
+  whenReady(scheduleFollow);
 
   // ---- Uppdateringar ----
   function updateBanner(version){
@@ -3177,26 +3348,82 @@
   }
   if(!panel)listen('update-available',e=>updateBanner(e.payload));
 
-  // ---- Windows-inställningar ----
-  let settings={autostart:false,closeToTray:true,shortcut:'Ctrl+Alt+L'};
-  invoke('get_desktop_settings').then(s=>{settings=Object.assign(settings,s);}).catch(()=>{});
-  document.addEventListener('change',e=>{
-    const box=e.target.closest&&e.target.closest('[data-desktop-setting]');if(!box)return;
-    const key=box.dataset.desktopSetting,on=box.checked;
-    invoke(key==='autostart'?'set_autostart':'set_close_to_tray',{on}).then(()=>{settings[key]=on;app().toast(on?'På':'Av');})
-      .catch(()=>{box.checked=!on;app().toast('Inställningen kunde inte ändras');});
+  // Efter en uppdatering: kort om vad som är nytt, en gång.
+  const NEWS={'1.1':['Snabbpanelen är ett eget fönster som du kan flytta och ändra storlek på. Den minns var du lade den och öppnas där du var.',
+    'Markera "BrB 3:8" eller "20 kap. 1 § brottsbalken" i Word, ett mejl eller en PDF och tryck kortkommandot, så öppnas lagrummet direkt.',
+    'Bred layout i stora fönster: innehållet till vänster, lagtexten i mitten och kopplingarna till höger.',
+    'Håll musen över en hänvisning för att läsa paragrafen. Högerklicka på en paragraf för menyn. Kopierad lagtext får källan efter sig.',
+    'Ctrl + K: gå till eller sök · Ctrl + F: sök i lagen · Ctrl + hjulet: textstorlek · Alt + ← →: bakåt och framåt.',
+    'Eget kortkommando, panelens läge och mer under Inställningar → Windows. Hopplistan i aktivitetsfältet fungerar nu.']};
+  if(!panel)whenReady(()=>{
+    const v=app().version,minor=v.split('.').slice(0,2).join('.'),seen=local.seenVersion;
+    local.seenVersion=v;saveLocal();
+    if(!seen||seen.split('.').slice(0,2).join('.')===minor||!NEWS[minor])return;
+    setTimeout(()=>app().showSheet('<div class="sheet-title">Nytt i Lagbok Desktop '+esc(minor)+' <button class="icon-button" data-action="close" aria-label="Stäng">×</button></div>'+
+      '<ul class="news-list">'+NEWS[minor].map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>',false),900);
   });
-  const check=(key,label,sub)=>'<label class="list-row desktop-setting"><div class="grow"><div class="row-title">'+label+'</div><div class="row-sub">'+sub+'</div></div>'+
-    '<input type="checkbox" data-desktop-setting="'+key+'"'+(settings[key]?' checked':'')+'></label>';
+
+  // ---- Windows-inställningar ----
+  let settings={autostart:false,closeToTray:true,shortcut:'ctrl+alt+l',shortcutLabel:'Ctrl + Alt + L',shortcutOk:true,panelMode:'float',lookupSelection:true};
+  const loadSettings=()=>invoke('get_desktop_settings').then(s=>{settings=Object.assign(settings,s);}).catch(()=>{});
+  loadSettings();
+  const rerenderSettings=()=>{if(/^#\/settings/.test(location.hash))window.dispatchEvent(new HashChangeEvent('hashchange'));};
+  document.addEventListener('change',e=>{
+    const el=e.target.closest&&e.target.closest('[data-desktop-setting]');if(!el)return;
+    const key=el.dataset.desktopSetting,on=el.type==='checkbox'?el.checked:el.value;
+    if(key==='copyCitation'){local.copyCitation=on;saveLocal();app().toast(on?'På':'Av');return;}
+    const call={autostart:['set_autostart',{on}],closeToTray:['set_close_to_tray',{on}],lookupSelection:['set_lookup_selection',{on}],panelMode:['set_panel_mode',{mode:on}]}[key];
+    if(!call)return;
+    invoke(call[0],call[1]).then(()=>{settings[key]=on;app().toast(key==='panelMode'?(on==='edge'?'Panelen ligger längs högerkanten':'Panelen är ett fritt fönster'):(on?'På':'Av'));})
+      .catch(()=>{if(el.type==='checkbox')el.checked=!on;app().toast('Inställningen kunde inte ändras');});
+  });
+  // Nytt kortkommando: tryck "Ändra" och sedan den kombination du vill ha (minst en av Ctrl, Alt, Win).
+  function accelerator(e){
+    if(/^(?:Control|Alt|Shift|Meta|OS)$/.test(e.key))return null;
+    const mods=[e.ctrlKey&&'ctrl',e.altKey&&'alt',e.shiftKey&&'shift',e.metaKey&&'super'].filter(Boolean);
+    if(!e.ctrlKey&&!e.altKey&&!e.metaKey)return null;
+    const code=e.code||'';let key=null;
+    if(/^Key[A-Z]$/.test(code))key=code.slice(3).toLowerCase();
+    else if(/^Digit\d$/.test(code))key=code.slice(5);
+    else if(/^F\d{1,2}$/.test(code))key=code.toLowerCase();
+    else key=({Space:'space',Period:'.',Comma:',',Minus:'-',Slash:'/',Backslash:'\\',Semicolon:';',Quote:"'",BracketLeft:'[',BracketRight:']',Backquote:'`'})[code]||null;
+    return key?mods.concat(key).join('+'):null;
+  }
+  document.addEventListener('click',e=>{
+    const btn=e.target.closest&&e.target.closest('[data-desktop-action="shortcut"]');if(!btn)return;
+    btn.textContent='Tryck kombinationen …';btn.classList.add('recording');
+    const stop=()=>{window.removeEventListener('keydown',onKey,true);btn.classList.remove('recording');btn.textContent='Ändra';};
+    const onKey=ev=>{
+      ev.preventDefault();ev.stopPropagation();
+      if(ev.key==='Escape'){stop();return;}
+      const acc=accelerator(ev);if(!acc)return;
+      stop();
+      invoke('set_shortcut',{shortcut:acc}).then(label=>{settings.shortcut=acc;settings.shortcutLabel=label;settings.shortcutOk=true;app().toast('Kortkommando: '+label);rerenderSettings();})
+        .catch(()=>app().toast('Kombinationen används redan av ett annat program. Välj en annan.'));
+    };
+    window.addEventListener('keydown',onKey,true);
+  });
+  const check=(key,label,sub,on)=>'<label class="list-row desktop-setting"><div class="grow"><div class="row-title">'+label+'</div><div class="row-sub">'+sub+'</div></div>'+
+    '<input type="checkbox" data-desktop-setting="'+key+'"'+(on?' checked':'')+'></label>';
+  const KEYS=[['Ctrl + K','Gå till eller sök (t.ex. BrB 3:8)'],['Ctrl + F','Sök i lagen du läser'],['Esc','Stäng menyn, eller dölj snabbpanelen'],
+    ['Alt + ← →, musens sidoknappar','Bakåt och framåt'],['Ctrl + Page Up/Down','Föregående och nästa kapitel'],['Ctrl + hjulet, Ctrl + plus/minus','Textstorlek (Ctrl + 0 återställer)'],
+    ['Högerklick på en paragraf','Kopiera, spara, anteckna …']];
 
   window.LagbokDesktop={
     settingsHtml(){
+      loadSettings();
       return '<div class="section-title">Windows</div><div class="card-list">'+
-        '<div class="list-row"><div class="grow"><div class="row-title">Snabbpanel: '+esc(settings.shortcut.replace(/\+/g,' + '))+'</div>'+
-        '<div class="row-sub">Fäller fram Lagbok i högerkanten var du än är i Windows. Esc eller samma kortkommando döljer den.</div></div></div>'+
-        check('closeToTray','Krysset gömmer appen vid klockan','Appen fortsätter att gå i bakgrunden så att kortkommandot alltid fungerar. Avsluta via ikonen vid klockan.')+
-        check('autostart','Starta med Windows','Startar dold vid inloggning, redo för kortkommandot.')+
-        '</div>';
+        '<div class="list-row desktop-setting"><div class="grow"><div class="row-title">Snabbpanel: '+esc(settings.shortcutLabel)+'</div>'+
+        '<div class="row-sub">'+(settings.shortcutOk?'Fungerar var du än är i Windows. Esc eller samma kortkommando döljer panelen.':'Kombinationen används av ett annat program. Välj en annan.')+'</div></div>'+
+        '<button type="button" class="button" data-desktop-action="shortcut">Ändra</button></div>'+
+        '<label class="list-row desktop-setting"><div class="grow"><div class="row-title">Panelens läge</div><div class="row-sub">Ett fritt fönster som minns var du lade det, eller längs högerkanten.</div></div>'+
+        '<select data-desktop-setting="panelMode"><option value="float"'+(settings.panelMode!=='edge'?' selected':'')+'>Fritt fönster</option><option value="edge"'+(settings.panelMode==='edge'?' selected':'')+'>Högerkanten</option></select></label>'+
+        check('lookupSelection','Slå upp markerad text','Markerar du "BrB 3:8" i ett annat program och trycker kortkommandot öppnas lagrummet direkt. Görs inte i terminaler.',settings.lookupSelection)+
+        check('copyCitation','Kopiera lagtext med källa','Markerad lagtext får källan efter sig när du kopierar, t.ex. "(3 kap. 8 § brottsbalken)".',local.copyCitation)+
+        check('closeToTray','Krysset gömmer appen vid klockan','Appen fortsätter att gå i bakgrunden så att kortkommandot alltid fungerar. Avsluta via ikonen vid klockan.',settings.closeToTray)+
+        check('autostart','Starta med Windows','Startar dold vid inloggning, redo för kortkommandot.',settings.autostart)+
+        '</div><div class="section-title">Kortkommandon i appen</div><div class="card-list key-list">'+
+        KEYS.map(([k,d])=>'<div class="list-row"><kbd>'+esc(k)+'</kbd><div class="grow row-sub">'+esc(d)+'</div></div>').join('')+'</div>';
     },
     checkUpdate(){
       app().toast('Letar efter ny version …');

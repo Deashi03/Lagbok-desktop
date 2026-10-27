@@ -11,13 +11,31 @@ Lagbok Desktop är en egen produkt, skild från mobilappen [Lagboken](https://gi
 
 Appen uppdaterar sig själv: när en ny version finns visas en rad överst, och ett klick installerar den och startar om appen. Avinstallera via Inställningar → Appar.
 
-## Windows-funktioner (1.0)
-- **Snabbpanel, Ctrl + Alt + L.** Kortkommandot fungerar var du än är i Windows. Lagbok glider fram längs högerkanten på den skärm där muspekaren är, med en tredjedels bredd och sökfältet redo. Skriv till exempel `BrB 3:8` och tryck Enter. Esc eller samma kortkommando döljer panelen igen. ⤢ öppnar det som visas i huvudfönstret.
+## Windows-funktioner
+- **Snabbpanel, Ctrl + Alt + L.** Kortkommandot fungerar var du än är i Windows. Skriv till exempel `BrB 3:8` och tryck Enter. Esc eller samma kortkommando döljer panelen igen. ⤢ öppnar det som visas i huvudfönstret.
 - **Ett vanligt Windows-fönster.** Du kan fästa det mot skärmkanterna, använda delad skärm (Win + ←/→, Snap) och ändra storleken fritt. Appen minns storlek, läge och skärm mellan starterna.
 - **Ikon vid klockan.** Krysset gömmer appen där, så att kortkommandot alltid fungerar. Från ikonen kan du visa appen, öppna snabbpanelen eller avsluta. Under Inställningar → Windows kan du välja att krysset stänger appen i stället, och att appen startar dold med Windows.
 - **Hopplista.** Högerklicka på appen i aktivitetsfältet för att se dina favoriter och de lagrum du läst senast.
 - **Lagbok-länkar.** `lagbok://BrB/3/8` eller `lagbok://RB 23:4` i ett mejl, i Word eller i OneNote öppnar lagrummet direkt. Startar man appen en gång till används fönstret som redan är öppet.
 - Webb- och e-postlänkar öppnas i Windows standardprogram. Färgtemat kan följa Windows.
+
+## Nytt i 1.1
+- **Snabbpanelen är ett fritt fönster** (cirka 540 × 720). Du drar det i rubrikraden och ändrar storlek i kanterna, och det minns var du lade det. Läget längs högerkanten finns kvar under Inställningar → Windows.
+- **Panelen öppnas där du var.** Bara på startsidan får sökfältet markören direkt.
+- **Slå upp markerad text.** Markera till exempel "BrB 3:8" eller "20 kap. 1 § brottsbalken" i Word, ett mejl eller en PDF och tryck kortkommandot, så öppnas lagrummet. Urklipp läggs tillbaka som det var. I terminaler görs ingen kopiering. Funktionen kan stängas av.
+- **Eget kortkommando** under Inställningar → Windows.
+- **Bred layout från 1 100 punkters bredd.** Innehållet ligger till vänster och följer med när du läser. Lagtexten ligger i mitten, och till höger visas paragrafen du läser med kopplingar och anteckning. Katalogen visas i två spalter.
+- **Förhandsvisning:** håll musen över en hänvisning för att läsa paragrafen.
+- **Högerklick och kopiering.** Högerklick på en paragraf öppnar dess meny. Markerad lagtext kopieras med källan efter sig, till exempel "(3 kap. 8 § brottsbalken)".
+- **Kortkommandon:**
+  - Ctrl + K: gå till eller sök;
+  - Ctrl + F: sök i lagen;
+  - Ctrl + hjulet eller Ctrl + plus/minus: textstorlek;
+  - Alt + ← → och musens sidoknappar: bakåt och framåt;
+  - Ctrl + Page Up/Down: byt kapitel.
+- **Fönstrets titel** visar vad du läser.
+- **Hopplistan fungerar.** Appen anger samma app-id som genvägarna, och listan visar Öppna snabbpanelen, ★ favoriter och Senast lästa.
+- Efter en uppdatering visas en gång vad som är nytt.
 
 ## Uppbyggnad
 - Webbappen (`index.html`, `assets/`, `data/`) är en kopia av Lagboken 1.6.4. `assets/desktop.js` är Windows-delen. Den gör ingenting i en vanlig webbläsare, så webbtesterna körs som förut.

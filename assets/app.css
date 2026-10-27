@@ -591,3 +591,45 @@ html[data-theme="dark"] .fav-star-mini{color:#264D39}
 .reader-heading .division-label{margin-bottom:6px}
 .future-notice{border-left:3px solid var(--wine);background:var(--soft);color:var(--text)}
 .preamble{font-style:italic;color:var(--secondary);font-size:14px;margin:8px 0 4px}
+
+/* ---------- Lagbok Desktop ---------- */
+/* Katalogens lagblock: osynliga i smal layout, rutor i ett rutnät i bred layout. */
+.law-block{display:contents}
+/* Bred layout (fönster minst 1100 punkter, inte snabbpanelen). */
+html[data-wide="true"] .app-shell{max-width:none;box-shadow:none}
+html[data-wide="true"] .topbar,html[data-wide="true"] .bottom-nav{padding-left:max(24px,calc(50% - 680px));padding-right:max(24px,calc(50% - 680px))}
+html[data-wide="true"] .bottom-nav{grid-template-columns:repeat(2,minmax(0,240px));justify-content:center}
+html[data-wide="true"] .page{max-width:1120px;margin-left:auto;margin-right:auto;padding-left:32px;padding-right:32px}
+html[data-wide="true"] .cat-section .card-list{columns:2;column-gap:32px;column-rule:1px solid var(--border)}
+html[data-wide="true"] .cat-section .card-list>.law-block{display:block;break-inside:avoid;min-width:0}
+html[data-wide="true"] .reader-context{max-width:1360px;margin:0 auto}
+.wide-law{display:grid;grid-template-columns:minmax(230px,300px) minmax(0,760px) minmax(260px,340px);justify-content:center;gap:28px;padding:0 24px;align-items:start}
+.wide-law>.law-reader{max-width:none;margin:0;padding-left:8px;padding-right:8px}
+.wide-toc,.wide-side{position:sticky;top:0;max-height:calc(100dvh - 140px);overflow-y:auto;overscroll-behavior:contain;padding:22px 2px 30px;scrollbar-width:thin}
+.wide-toc{border-right:1px solid var(--border);padding-right:14px}
+.wide-toc .toc-results{overflow:visible;padding:0}
+.wide-toc-head{padding:0 6px 10px}
+.wide-toc .toc-chapter-summary{padding-top:9px;padding-bottom:9px}
+.wide-toc .toc-current{background:var(--soft-green);border-radius:8px}
+.wide-side{border-left:1px solid var(--border);padding-left:18px}
+.wide-side-head h2{font-family:Georgia,"Iowan Old Style",serif;font-size:22px;color:var(--accent);margin:6px 0 2px}
+.wide-side-head p{margin:0 0 6px;font-weight:650;font-size:14px}
+.wide-side .section-title{margin-top:20px}
+.wide-side .card-list .list-row{padding-top:9px;padding-bottom:9px}
+.wide-side .empty{padding:14px 0;text-align:left}
+.source-label{font-size:12px;color:var(--secondary);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+/* Förhandsvisning av en hänvisning när musen hålls över den. */
+.ref-preview{position:fixed;z-index:40;overflow-y:auto;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 40px #0003;padding:14px 16px}
+.ref-preview .preview-head{font-size:13px;margin-bottom:8px}
+.ref-preview .paragraph-content{font-size:calc(14.5px * var(--fontscale));max-width:none}
+/* Snabbpanelen: rubrikraden är dragrad. */
+html[data-panel="true"] .topbar{cursor:default;-webkit-user-select:none;user-select:none}
+html[data-panel="true"] .topbar button{cursor:pointer}
+/* Windows-inställningar och kortkommandon. */
+.desktop-setting select{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text)}
+.desktop-setting .button.recording{border-color:var(--accent);color:var(--accent)}
+.key-list .list-row{gap:14px}
+kbd{font:600 12px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:var(--soft);border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;padding:4px 7px;white-space:nowrap;color:var(--text)}
+.news-list{margin:4px 0 8px;padding-left:20px;line-height:1.5}
+.news-list li{margin:0 0 9px}
+@media (hover:hover){a.law-ref{cursor:pointer}.list-row:hover{background:var(--soft)}}

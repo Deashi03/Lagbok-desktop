@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Huvudfönstret och snabbpanelen: händelser från Windows-skalet och appens egna kommandon.",
   "windows": ["main", "panel"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "core:window:allow-start-dragging"]
 }
