@@ -1,0 +1,105 @@
+name: Kontrollera lagändringar
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update-law-data.yml'
+      - 'scripts/import_laws.py'
+      - 'data/catalog.json'
+  schedule:
+    - cron: '35 4 1 * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: sfs-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parser tests
+        run: python -m unittest discover -s tests -v
+      - name: Find new laws in SFS
+        # Nya gällande lagar läggs in i den avdelning titeln visar; placeringen granskas i förslaget.
+        if: github.event_name != 'push'
+        continue-on-error: true
+        run: python scripts/discover_all.py add --forordningar && python scripts/discover_all.py anchor
+      - name: Fetch statutes
+        env:
+          CHANGE_REPORT: data/import-report.md
+          WORKERS: '6'
+        run: python scripts/import_laws.py
+      - name: Update international conventions from law appendices
+        run: python scripts/conventions.py
+      - name: Add new laws to report
+        if: github.event_name != 'push'
+        continue-on-error: true
+        run: |
+          if [ -f data/discovery-report.md ] && grep -q "Tillagda författningar: [1-9]" data/discovery-report.md; then
+            printf '\n\n' >> data/import-report.md; cat data/discovery-report.md >> data/import-report.md
+          fi
+      - name: Check editorial headings against new text
+        # Fel här ska synas i granskningen men inte hindra att förslaget skapas.
+        continue-on-error: true
+        run: |
+          if ! node tests/test_editorial.js > editorial.log 2>&1; then
+            printf '\n\n**Redaktionella rubriker behöver ses över:**\n\n```\n%s\n```\n' "$(tail -5 editorial.log)" >> data/import-report.md
+          fi
+      - name: Bootstrap initial corpus
+        if: github.event_name == 'push'
+        run: |
+          if git ls-files "data/laws/*.json" | grep -q .; then
+            echo "Data already in repository; changes require pull-request review."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/catalog.json data/laws
+          git commit -m "data: initial validated SFS import"
+          git push origin HEAD:main
+      - name: Link amendments to legislative history
+        if: github.event_name != 'push'
+        continue-on-error: true
+        run: python scripts/forarbeten.py
+      - name: Build search index and reference register
+        run: node scripts/build_indexes.js
+      - name: Audit law text
+        continue-on-error: true
+        run: |
+          if ! python scripts/audit.py > audit.log 2>&1; then
+            printf '\n\n**Granskningen hittade problem:**\n\n```\n%s\n```\n' "$(tail -20 audit.log)" >> data/import-report.md
+          fi
+      - name: Save import report
+        run: cp data/import-report.md "${{ runner.temp }}/import-report.md"
+      - name: Propose changes for legal review
+        # Kräver att "Allow GitHub Actions to create and approve pull requests" är påslaget.
+        # Utan det finns ändringarna ändå kvar på grenen automation/sfs-updates.
+        continue-on-error: true
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/sfs-updates
+          title: 'Granska importerade och ändrade SFS-författningar'
+          commit-message: 'data: import SFS from Riksdagen'
+          body-path: data/import-report.md
+          add-paths: |
+            data/catalog.json
+            data/laws/*.json
+            data/index/**
+            data/history/**
+            data/changes.json
+            data/forarbeten.json
+            data/audit-report.md
+      - name: Fail if some statutes could not be imported
+        run: |
+          cat "${{ runner.temp }}/import-report.md" >> "$GITHUB_STEP_SUMMARY"
+          if grep -q "Kunde inte importeras" "${{ runner.temp }}/import-report.md"; then
+            exit 1
+          fi

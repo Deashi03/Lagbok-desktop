@@ -1,0 +1,82 @@
+name: Bygg och släpp Lagbok Desktop
+# Bygger installationsfilen för Windows och lägger ut den som en release på GitHub, med latest.json
+# för appens automatiska uppdateringar. Körs när appen eller lagtexten ändras på main (till exempel när
+# månadens lagändringar slås ihop) och kan startas för hand.
+#
+# Versionsnummer: versionen i src-tauri/tauri.conf.json släpps första gången. Finns den redan som release
+# får bygget nästa patchversion (1.0.0 -> 1.0.1 …) utan att något behöver ändras i koden.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/**'
+      - 'data/**'
+      - 'index.html'
+      - 'icon.svg'
+      - 'src-tauri/**'
+      - 'scripts/stage.js'
+      - 'scripts/bundle.js'
+      - 'package.json'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Installera Tauri CLI
+        run: npm ci
+      - name: Bestäm versionsnummer
+        id: version
+        shell: bash
+        env:
+          SIGNING_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          base=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          git fetch --tags --quiet
+          version=$base
+          if git rev-parse -q --verify "refs/tags/v$base" >/dev/null; then
+            prefix=${base%.*}
+            last=$(git tag -l "v$prefix.*" | sed 's/^v//' | sort -t. -k3,3n | tail -1)
+            version="$prefix.$(( ${last##*.} + 1 ))"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # Utan signeringsnyckel byggs installationsfilen ändå, men utan filer för automatisk uppdatering.
+          if [ -n "$SIGNING_KEY" ]; then updater=true; else updater=false; fi
+          echo "updater=$updater" >> "$GITHUB_OUTPUT"
+          printf '{"version":"%s","bundle":{"createUpdaterArtifacts":%s}}\n' "$version" "$updater" > src-tauri/release.conf.json
+          cat src-tauri/release.conf.json
+      - name: Bygg och släpp
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+          LAGBOK_VERSION: ${{ steps.version.outputs.version }}
+        with:
+          args: --config src-tauri/release.conf.json
+          tagName: v${{ steps.version.outputs.version }}
+          releaseName: Lagbok Desktop ${{ steps.version.outputs.version }}
+          releaseBody: |
+            Ladda ner **Lagbok.Desktop_${{ steps.version.outputs.version }}_x64-setup.exe** nedan och dubbelklicka för att installera. Ingen administratörsbehörighet behövs.
+
+            Första gången kan Windows visa "Windows skyddade datorn": klicka **Mer information** och sedan **Kör ändå**.
+
+            Redan installerad? Appen uppdaterar sig själv.
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: ${{ steps.version.outputs.updater }}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs>
+<linearGradient id="leather" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#2E6B52"/><stop offset="1" stop-color="#173A2A"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F1D891"/><stop offset=".55" stop-color="#C9A24E"/><stop offset="1" stop-color="#9C7A30"/></linearGradient>
+<filter id="emboss" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="1.6" stdDeviation="0.6" flood-color="#0B1F16" flood-opacity=".75"/></filter>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .07 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+<radialGradient id="sheen" cx=".3" cy=".2" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+</defs><rect width="200" height="200" fill="url(#leather)"/><rect width="200" height="200" fill="#000" filter="url(#grain)"/><rect width="200" height="200" fill="url(#sheen)"/><text x="100" y="168" font-family="'Iowan Old Style',Charter,Georgia,serif" font-weight="700" font-size="190" text-anchor="middle" fill="#123425" opacity=".55">§</text>
+   <g filter="url(#emboss)" fill="url(#gold)"><rect x="26" y="66" width="148" height="4"/><rect x="26" y="134" width="148" height="4"/>
+   <text x="100" y="124" font-family="'Iowan Old Style',Charter,Georgia,serif" font-weight="700" font-size="60" letter-spacing="4" text-anchor="middle">LAG</text></g></svg>

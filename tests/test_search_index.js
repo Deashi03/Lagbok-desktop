@@ -1,0 +1,25 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const {create,snippet,words}=require('../assets/search-index.js');
+const load=p=>Promise.resolve(JSON.parse(fs.readFileSync(path.join(__dirname,'..',p),'utf8')));
+const index=create(load);
+const esc=s=>s.replace(/</g,'&lt;');
+(async()=>{
+ const r=await index.query('husrannsak');
+ assert.ok(r.total>10);
+ assert.equal(r.hits[0].sfs,'1942:740','husrannsakan ska främst ge rättegångsbalken');
+ const k=await index.query('kroppsvisitation fara i dröjsmål');
+ assert.ok(k.hits.some(h=>h.sfs==='1942:740'&&h.chapter==='28'));
+ const brb=await index.query('olaga hot');
+ assert.ok(brb.hits.slice(0,5).some(h=>h.sfs==='1962:700'&&h.chapter==='4'&&h.number==='5'),'BrB 4:5 bland de första träffarna');
+ assert.equal((await index.query('xqzvw')).total,0);
+ assert.deepEqual(words('Olaga  hot, ÖL'),['olaga','hot','ol']);
+ assert.equal(snippet('Den som hotar någon annan med brottslig gärning',['hot'],esc),'Den som <mark>hotar</mark> någon annan med brottslig gärning');
+ console.log('Sökindex: prefixsökning, rangordning och utdrag godkända');
+})().catch(e=>{console.error(e);process.exitCode=1;});
+const {expand}=require('../assets/search-index.js');
+assert.deepEqual(expand(['lob']),['berusad']);
+assert.deepEqual(expand(['snatteri']),['ringa','stold']);
+assert.deepEqual(expand(['stold']),['stold']);
+(async()=>{const r=await index.query('lob');assert.ok(r.hits.some(h=>h.sfs==='1976:511'),'LOB-synonym ska ge LOB');console.log('Sökindex: synonymer godkända');})();

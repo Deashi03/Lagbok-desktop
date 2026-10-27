@@ -1,0 +1,45 @@
+name: Hitta och importera nya författningar
+# Slår upp titlarna i data/wanted.json i Riksdagens katalog, lägger till de som stämmer exakt och
+# är gällande, hämtar lagtexten och öppnar en pull request för granskning.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: sfs-import
+  cancel-in-progress: false
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parser tests
+        run: python -m unittest discover -s tests -v
+      - name: Find statutes in Riksdagen's catalog
+        run: python scripts/discover_laws.py --apply
+      - name: Fetch statutes
+        env:
+          CHANGE_REPORT: data/import-report.md
+        run: python scripts/import_laws.py
+      - name: Build search index and reference register
+        run: node scripts/build_indexes.js
+      - name: Combine reports
+        run: |
+          cat data/discovery-report.md data/import-report.md > "${{ runner.temp }}/report.md"
+          cat "${{ runner.temp }}/report.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Propose additions for review
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/discovery
+          title: 'Nya författningar från Riksdagens katalog'
+          commit-message: 'data: nya författningar från Riksdagens katalog'
+          body-path: ${{ runner.temp }}/report.md
+          add-paths: |
+            data/catalog.json
+            data/laws/*.json
+            data/index/**
+            data/discovery-report.md

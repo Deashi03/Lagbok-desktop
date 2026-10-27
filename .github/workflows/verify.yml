@@ -1,0 +1,61 @@
+name: Testa Lagbok Desktop
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parser and app checks
+        run: |
+          python -m unittest discover -s tests -v
+          for f in assets/*.js scripts/*.js; do node --check "$f"; done
+          python -m json.tool data/catalog.json > /dev/null
+
+      - name: Testa snabbkoder och appflöden
+        run: |
+          node tests/test_bundle.js
+          node tests/test_search.js
+          node tests/test_app_smoke.js
+          node tests/test_legal_links.js
+          node tests/test_toc.js
+          node tests/test_law_model.js
+          node tests/test_editorial.js
+          node tests/test_reference_coverage.js
+          node tests/test_data_quality.js
+          node tests/test_relations.js
+          node tests/test_search_index.js
+          node tests/test_highlights.js
+      - name: Granska lagtexten
+        run: |
+          python scripts/audit.py
+          cat data/audit-report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Kontrollera att sökindexet matchar lagtexten
+        run: |
+          node scripts/build_indexes.js
+          git diff --exit-code --stat data/index
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installera Playwright
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Webbläsartest av webbdelen
+        run: |
+          python3 -m http.server 8765 &
+          sleep 2
+          node tests/browser/e2e.js
