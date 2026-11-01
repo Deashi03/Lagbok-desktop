@@ -1,22 +1,22 @@
 # Granskning av lagtexten
 
-Datum: 2026-10-27. 5018 författningar.
+Datum: 2026-11-01. 5030 författningar.
 
 ## Siffror
 
-- författningar: 5018
+- författningar: 5030
 - förordningar med lag: 1863
 - länkade hänvisningar %: 97.8
 - kommande upphävande: 4
-- paragraf som ännu inte trätt i kraft: 2037
+- paragraf som ännu inte trätt i kraft: 2042
 - tidigare lydelse utan datum (visas som tidigare): 85
 - träder i kraft när regeringen bestämmer: 374
-- upphävd paragraf (visas förminskad): 3582
-- utgången lydelse sparad (visas inte): 2
+- upphävd paragraf (visas förminskad): 3583
+- utgången lydelse sparad (visas inte): 17
 
 ## Upplysningar (inte fel)
 
-### upphävd paragraf (visas förminskad) (3582)
+### upphävd paragraf (visas förminskad) (3583)
 - 1949:105 4:7
 - 2014:801 13:19
 - 1991:1559 3:6 a
@@ -60,7 +60,7 @@ Datum: 2026-10-27. 5018 författningar.
 - 2008:206 0:1
 - 2011:1159 0:3
 
-### paragraf som ännu inte trätt i kraft (2037)
+### paragraf som ännu inte trätt i kraft (2042)
 - 2009:1514 0:1
 - 1949:381 2:10
 - 1949:381 11:12 b
@@ -104,12 +104,27 @@ Datum: 2026-10-27. 5018 författningar.
 - 1962:700 26:5
 - 1962:700 26:6
 
+### utgången lydelse sparad (visas inte) (17)
+- 2007:845 0:1
+- 2007:845 0:2
+- 2007:845 0:4
+- 2007:845 0:4 a
+- 2007:845 0:5
+- 2007:845 0:6
+- 2007:845 0:8
+- 2007:845 0:9
+- 2007:845 0:12
+- 2007:845 0:13
+- 2007:845 0:13 a
+- 2007:845 0:15
+- 2015:744 0:9
+- 2016:1283 0:3
+- 2016:1283 0:7
+- 2019:66 3:1
+- 2019:66 3:2
+
 ### kommande upphävande (4)
 - 1998:603 2030-07-01
 - 1990:52 2027-01-01
 - 2016:1048 2027-01-01
 - 2010:186 2027-01-01
-
-### utgången lydelse sparad (visas inte) (2)
-- 2016:1283 0:3
-- 2016:1283 0:7

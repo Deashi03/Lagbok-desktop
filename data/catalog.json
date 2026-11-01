@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated": "2026-10-27T01:21:40+00:00",
+  "generated": "2026-11-01T11:40:34+00:00",
   "source": "Sveriges riksdag, Riksdagens öppna data",
   "laws": [
     {
@@ -5040,6 +5040,17 @@
       "check": "lag om införande av socialförsäkringsbalken",
       "section": "balkar",
       "parent": "2010:110"
+    },
+    {
+      "sfs": "2025:278",
+      "name": "Förordningen om tillämpning av den nordiska konventionen om social trygghet",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning om tillämpning av den nordiska konventionen om social trygghet",
+      "section": "balkar",
+      "articleChapter": "K",
+      "anchor": "2010:110"
     },
     {
       "sfs": "2014:322",
@@ -12110,6 +12121,15 @@
       "section": "forvaltning"
     },
     {
+      "sfs": "1979:291",
+      "name": "Förordningen om tolktaxa",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning om tolktaxa",
+      "section": "forvaltning"
+    },
+    {
       "sfs": "2023:462",
       "name": "Förordningen om transaktionskonto vid Utbetalningsmyndigheten",
       "type": "förordning",
@@ -12405,6 +12425,15 @@
       "check": "förordning om överlåtelse av statens fasta egendom m m",
       "section": "forvaltning",
       "anchor": "2011:203"
+    },
+    {
+      "sfs": "1996:1191",
+      "name": "Förordningen om överlåtelse av statens lösa egendom",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning om överlåtelse av statens lösa egendom",
+      "section": "forvaltning"
     },
     {
       "sfs": "1997:30",
@@ -14255,6 +14284,15 @@
       "check": "förordning om rättsgenetisk undersökning vid utredning av faderskap",
       "section": "civil",
       "anchor": "1958:642"
+    },
+    {
+      "sfs": "2014:1085",
+      "name": "Förordningen om rättsväsendets informationshantering",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning om rättsväsendets informationshantering",
+      "section": "civil"
     },
     {
       "sfs": "1949:661",
@@ -17059,8 +17097,7 @@
       "aliases": [],
       "chaptered": false,
       "check": "förordning om utgivning av säkerställda obligationer",
-      "section": "foretag",
-      "anchor": "2003:1223"
+      "section": "foretag"
     },
     {
       "sfs": "1992:308",
@@ -22505,6 +22542,15 @@
       "anchor": "2006:496"
     },
     {
+      "sfs": "2018:224",
+      "name": "Förordningen om bostadsanpassningsbidrag",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning om bostadsanpassningsbidrag",
+      "section": "vard"
+    },
+    {
       "sfs": "2001:709",
       "name": "Förordningen om cancerregister hos Socialstyrelsen",
       "type": "förordning",
@@ -22561,6 +22607,15 @@
       "check": "förordning om ersättning från staten i vissa fall vid ingripanden för att förhindra spridning av en smittsam sjukdom",
       "section": "vard",
       "anchor": "2004:168"
+    },
+    {
+      "sfs": "1994:1120",
+      "name": "Förordningen om ersättning för fysioterapi",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning om ersättning för fysioterapi",
+      "section": "vard"
     },
     {
       "sfs": "1975:1157",
@@ -24248,16 +24303,6 @@
       "aliases": [],
       "chaptered": false,
       "check": "förordning om tillämpning av avtalet om social trygghet mellan sverige och japan",
-      "section": "vard",
-      "articleChapter": "K"
-    },
-    {
-      "sfs": "2025:278",
-      "name": "Förordningen om tillämpning av den nordiska konventionen om social trygghet",
-      "type": "förordning",
-      "aliases": [],
-      "chaptered": false,
-      "check": "förordning om tillämpning av den nordiska konventionen om social trygghet",
       "section": "vard",
       "articleChapter": "K"
     },
@@ -46674,6 +46719,15 @@
       "anchor": "2021:516"
     },
     {
+      "sfs": "2007:1074",
+      "name": "Förordningen med instruktion för Fideikommissnämnden",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning med instruktion för fideikommissnämnden",
+      "section": "instruktioner"
+    },
+    {
       "sfs": "2023:910",
       "name": "Förordningen med instruktion för Finansinspektionen",
       "type": "förordning",
@@ -46811,6 +46865,15 @@
       "aliases": [],
       "chaptered": false,
       "check": "förordning med instruktion för försäkringskassan",
+      "section": "instruktioner"
+    },
+    {
+      "sfs": "2007:1075",
+      "name": "Förordningen med instruktion för Gentekniknämnden",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning med instruktion för gentekniknämnden",
       "section": "instruktioner"
     },
     {
@@ -47347,6 +47410,15 @@
       "section": "instruktioner"
     },
     {
+      "sfs": "2007:1076",
+      "name": "Förordningen med instruktion för Notarienämnden",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning med instruktion för notarienämnden",
+      "section": "instruktioner"
+    },
+    {
       "sfs": "2019:1152",
       "name": "Förordningen med instruktion för Nämnden för prövning av oredlighet i forskning",
       "type": "förordning",
@@ -47436,6 +47508,15 @@
       "section": "instruktioner"
     },
     {
+      "sfs": "2007:1077",
+      "name": "Förordningen med instruktion för Revisorsinspektionen",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning med instruktion för revisorsinspektionen",
+      "section": "instruktioner"
+    },
+    {
       "sfs": "2014:1585",
       "name": "Förordningen med instruktion för Riksantikvarieämbetet",
       "type": "förordning",
@@ -47490,6 +47571,24 @@
       "aliases": [],
       "chaptered": false,
       "check": "förordning med instruktion för rymdstyrelsen",
+      "section": "instruktioner"
+    },
+    {
+      "sfs": "2007:1078",
+      "name": "Förordningen med instruktion för Rättshjälpsmyndigheten",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning med instruktion för rättshjälpsmyndigheten",
+      "section": "instruktioner"
+    },
+    {
+      "sfs": "2007:1079",
+      "name": "Förordningen med instruktion för Rättshjälpsnämnden",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning med instruktion för rättshjälpsnämnden",
       "section": "instruktioner"
     },
     {
@@ -48163,6 +48262,15 @@
       "section": "instruktioner"
     },
     {
+      "sfs": "2007:1081",
+      "name": "Förordningen med instruktion för Överklagandenämnden för nämndemannauppdrag",
+      "type": "förordning",
+      "aliases": [],
+      "chaptered": false,
+      "check": "förordning med instruktion för överklagandenämnden för nämndemannauppdrag",
+      "section": "instruktioner"
+    },
+    {
       "sfs": "2007:1348",
       "name": "Förordningen med instruktion för Överklagandenämnden för studiestöd",
       "type": "förordning",
@@ -48430,9 +48538,9 @@
     }
   ],
   "coverage": {
-    "all": 5514,
-    "laws": 1768,
-    "regs": 3423,
-    "date": "2026-10-26"
+    "all": 5532,
+    "laws": 1770,
+    "regs": 3435,
+    "date": "2026-11-01"
   }
 }

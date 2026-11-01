@@ -1,0 +1,690 @@
+[
+{
+"date": "2026-11-01",
+"sfs": "2017:193",
+"name": "Förordningen om statlig ersättning för asylsökande m.fl.",
+"new": false,
+"amendedBy": "2026:1825",
+"added": [],
+"changed": [
+[
+"0",
+"15"
+]
+],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "1979:291",
+"name": "Förordningen om tolktaxa",
+"new": true,
+"amendedBy": "2016:232",
+"added": [
+[
+"0",
+"1"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "1996:1191",
+"name": "Förordningen om överlåtelse av statens lösa egendom",
+"new": true,
+"amendedBy": "2025:1195",
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"5"
+],
+[
+"0",
+"6"
+],
+[
+"0",
+"7"
+],
+[
+"0",
+"8"
+],
+[
+"0",
+"9"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2014:1085",
+"name": "Förordningen om rättsväsendets informationshantering",
+"new": true,
+"amendedBy": "2022:830",
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"5"
+],
+[
+"0",
+"5 a"
+],
+[
+"0",
+"5 b"
+],
+[
+"0",
+"5 c"
+],
+[
+"0",
+"5 d"
+],
+[
+"0",
+"6"
+],
+[
+"0",
+"7"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2018:224",
+"name": "Förordningen om bostadsanpassningsbidrag",
+"new": true,
+"amendedBy": null,
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "1994:1120",
+"name": "Förordningen om ersättning för fysioterapi",
+"new": true,
+"amendedBy": "2026:24",
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"4 a"
+],
+[
+"0",
+"5"
+],
+[
+"0",
+"5 a"
+],
+[
+"0",
+"6"
+],
+[
+"0",
+"6 a"
+],
+[
+"0",
+"7"
+],
+[
+"0",
+"7 a"
+],
+[
+"0",
+"8"
+],
+[
+"0",
+"9"
+],
+[
+"0",
+"10"
+],
+[
+"0",
+"10 a"
+],
+[
+"0",
+"10 b"
+],
+[
+"0",
+"11"
+],
+[
+"0",
+"12"
+],
+[
+"0",
+"13"
+],
+[
+"0",
+"14"
+],
+[
+"0",
+"15"
+],
+[
+"0",
+"16"
+],
+[
+"0",
+"17"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2017:80",
+"name": "Hälso- och sjukvårdsförordning",
+"new": false,
+"amendedBy": "2026:1805",
+"added": [
+[
+"5 a",
+"1"
+],
+[
+"5 a",
+"2"
+],
+[
+"5 a",
+"3"
+],
+[
+"5 b",
+"1"
+],
+[
+"5 b",
+"2"
+],
+[
+"5 b",
+"3"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2025:468",
+"name": "Socialtjänstförordningen",
+"new": false,
+"amendedBy": "2026:1832",
+"added": [
+[
+"7",
+"3 a"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2026:1524",
+"name": "Förordningen om statligt stöd till företag inom primärproduktion av jordbruksprodukter eller fiskeri- och vattenbruksprodukter för ökade kostnader med anledning av krisen i Mellanöstern",
+"new": false,
+"amendedBy": "2026:1807",
+"added": [
+[
+"0",
+"3 a"
+],
+[
+"0",
+"10 b"
+],
+[
+"0",
+"10 c"
+],
+[
+"0",
+"21 a"
+],
+[
+"0",
+"28 a"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2007:1074",
+"name": "Förordningen med instruktion för Fideikommissnämnden",
+"new": true,
+"amendedBy": null,
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"5"
+],
+[
+"0",
+"6"
+],
+[
+"0",
+"7"
+],
+[
+"0",
+"8"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2007:1075",
+"name": "Förordningen med instruktion för Gentekniknämnden",
+"new": true,
+"amendedBy": "2019:516",
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"5"
+],
+[
+"0",
+"6"
+],
+[
+"0",
+"7"
+],
+[
+"0",
+"8"
+],
+[
+"0",
+"9"
+],
+[
+"0",
+"10"
+],
+[
+"0",
+"11"
+],
+[
+"0",
+"12"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2007:1076",
+"name": "Förordningen med instruktion för Notarienämnden",
+"new": true,
+"amendedBy": "2017:520",
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"5"
+],
+[
+"0",
+"6"
+],
+[
+"0",
+"7"
+],
+[
+"0",
+"8"
+],
+[
+"0",
+"9"
+],
+[
+"0",
+"10"
+],
+[
+"0",
+"11"
+],
+[
+"0",
+"12"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2007:1077",
+"name": "Förordningen med instruktion för Revisorsinspektionen",
+"new": true,
+"amendedBy": "2017:672",
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"1 a"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"5"
+],
+[
+"0",
+"6"
+],
+[
+"0",
+"6 a"
+],
+[
+"0",
+"7"
+],
+[
+"0",
+"7 a"
+],
+[
+"0",
+"8"
+],
+[
+"0",
+"9"
+],
+[
+"0",
+"10"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2007:1078",
+"name": "Förordningen med instruktion för Rättshjälpsmyndigheten",
+"new": true,
+"amendedBy": "2017:552",
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"5"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2007:1079",
+"name": "Förordningen med instruktion för Rättshjälpsnämnden",
+"new": true,
+"amendedBy": null,
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"5"
+],
+[
+"0",
+"6"
+],
+[
+"0",
+"7"
+],
+[
+"0",
+"8"
+]
+],
+"changed": [],
+"removed": []
+},
+{
+"date": "2026-11-01",
+"sfs": "2007:1081",
+"name": "Förordningen med instruktion för Överklagandenämnden för nämndemannauppdrag",
+"new": true,
+"amendedBy": "2018:1027",
+"added": [
+[
+"0",
+"1"
+],
+[
+"0",
+"2"
+],
+[
+"0",
+"3"
+],
+[
+"0",
+"4"
+],
+[
+"0",
+"5"
+],
+[
+"0",
+"6"
+],
+[
+"0",
+"7"
+],
+[
+"0",
+"8"
+],
+[
+"0",
+"9"
+],
+[
+"0",
+"10"
+],
+[
+"0",
+"11"
+]
+],
+"changed": [],
+"removed": []
+}
+]
