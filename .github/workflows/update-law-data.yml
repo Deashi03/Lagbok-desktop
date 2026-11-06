@@ -1,13 +1,7 @@
 name: Kontrollera lagändringar
+# Lagbok är huvudkällan: egen månadsimport i Desktop är avstängd.
+# Kan fortfarande startas manuellt vid undantag.
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/update-law-data.yml'
-      - 'scripts/import_laws.py'
-      - 'data/catalog.json'
-  schedule:
-    - cron: '35 4 1 * *'
   workflow_dispatch:
 permissions:
   contents: write

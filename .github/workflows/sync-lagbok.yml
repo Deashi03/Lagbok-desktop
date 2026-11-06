@@ -1,0 +1,122 @@
+name: Spegla Lagbok till Desktop
+# Enkelriktad: Deashi03/Lagbok -> Deashi03/Lagbok-desktop. Skriver ALDRIG till Lagbok.
+# Desktop-specifika filer och anpassningar bevaras via trevägsmerge.
+on:
+  schedule:
+    - cron: '17 */4 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+  issues: write
+concurrency:
+  group: lagbok-upstream-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    name: Hämta, integrera, testa och publicera vid ändringar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Läs senaste Lagbok och senaste synkroniserade version
+        run: |
+          git remote add lagbok-upstream https://github.com/Deashi03/Lagbok.git
+          git fetch --no-tags --depth=1 lagbok-upstream main:refs/remotes/lagbok-upstream/main
+          base=$(python3 -c "import json;print(json.load(open('.lagbok-upstream.json'))['commit'])")
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 lagbok-upstream "$base"
+          fi
+          git cat-file -e "$base^{commit}"
+      - name: Spegla enbart delad kod och data – vägra vid konflikter
+        id: integrate
+        run: |
+          python3 scripts/sync_from_lagbok.py
+          if [ -n "$(git status --porcelain)" ]; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Förbered exakt ändringsmängd
+        if: steps.integrate.outputs.changed == 'true'
+        id: changes
+        run: |
+          git add -A
+          if git diff --cached --name-only | grep -Eq '^(assets/|data/|index\.html$|icon\.svg$)'; then
+            echo 'release=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'release=false' >> "$GITHUB_OUTPUT"
+          fi
+          git diff --cached --stat | tail -25
+      - name: Testa Python, JavaScript, lagdata och index
+        if: steps.integrate.outputs.changed == 'true'
+        run: |
+          python3 -m unittest discover -s tests -v
+          for f in assets/*.js scripts/*.js; do node --check "$f"; done
+          python3 -m json.tool data/catalog.json > /dev/null
+          for test in tests/test_bundle.js tests/test_search.js tests/test_app_smoke.js \
+            tests/test_legal_links.js tests/test_toc.js tests/test_law_model.js \
+            tests/test_editorial.js tests/test_reference_coverage.js \
+            tests/test_data_quality.js tests/test_relations.js \
+            tests/test_search_index.js tests/test_highlights.js; do
+            node "$test"
+          done
+          python3 scripts/audit.py
+          node scripts/build_indexes.js
+          # Indexet ska vara exakt det som speglades; ingen tyst ombyggnad tillåts.
+          git diff --exit-code -- data/index
+      - name: Testa gränssnittet i Chromium
+        if: steps.integrate.outputs.changed == 'true'
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8765 > /tmp/lagbok-http.log 2>&1 &
+          sleep 2
+          node tests/browser/e2e.js
+      - name: Uppdatera enbart Lagbok Desktop main
+        if: steps.integrate.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ steps.changes.outputs.release }}
+        run: |
+          # Commit innehåller bara de före testerna stagade filerna.
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          sha=$(python3 -c "import json;print(json.load(open('.lagbok-upstream.json'))['commit'][:12])")
+          git commit -m "sync: Lagbok $sha till Desktop (Windows-funktioner bevarade)"
+          git push origin HEAD:main
+          # Push med GITHUB_TOKEN startar INTE vanliga push-workflows.
+          # workflow_dispatch fungerar och ger en ny signerad Windows-release.
+          if [ "$RELEASE" = 'true' ]; then
+            gh workflow run release.yml --ref main
+            echo 'En Windows-release har startats.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "Lagbok $sha är speglad till Desktop; källrepot har inte ändrats." >> "$GITHUB_STEP_SUMMARY"
+      - name: Ingen ändring behövs
+        if: steps.integrate.outputs.changed == 'false'
+        run: echo 'Desktop har redan senaste delade kod och lagdata från Lagbok.' >> "$GITHUB_STEP_SUMMARY"
+  alert:
+    name: Skapa en enda notis om synkroniseringen stoppas
+    if: ${{ failure() }}
+    needs: [sync]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skapa GitHub-ärende utan dubbletter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_LINK: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='Lagbok → Desktop: automatisk synkronisering behöver åtgärd'
+          existing=$(gh issue list --repo "$REPO" --state open --search 'automatisk synkronisering behöver åtgärd in:title' --json number --jq 'length')
+          if [ "$existing" = '0' ]; then
+            gh issue create --repo "$REPO" --title "$title" --body "Synkroniseringen stoppades för att skydda Desktop-anpassningar eller eftersom ett test misslyckades. **Ingen osäker uppdatering ska publiceras.** Granska [körningen]($RUN_LINK) och lös konflikten. Lagbok (källan) påverkas inte."
+          fi
