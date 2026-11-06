@@ -951,7 +951,7 @@
 /* Lagbok Desktop: Lagboken som Windows-app (Tauri). Samma läsapp som Lagboken; Windows-delarna finns i desktop.js och src-tauri. */
 (function () {
   'use strict';
-  const APP_VERSION='1.1.0';
+  const APP_VERSION='1.1.3';
   // Lagbok Desktop körs i Windows-skalet; i en vanlig webbläsare (testerna) beter sig appen som Lagboken.
   const DESKTOP=!!window.LAGBOK_DESKTOP;
   const APP_NAME='Lagbok Desktop';
@@ -3393,15 +3393,87 @@
   document.addEventListener('click',scheduleFollow);
   whenReady(scheduleFollow);
 
-  // ---- Uppdateringar ----
-  function updateBanner(version){
-    if(document.getElementById('update-banner'))return;
-    const b=document.createElement('button');b.id='update-banner';b.type='button';b.className='update-banner';
-    b.innerHTML='<strong>Lagbok Desktop '+esc(version)+' finns</strong><span>Tryck för att installera och starta om</span>';
-    b.addEventListener('click',()=>{b.querySelector('span').textContent='Hämtar och installerar …';invoke('install_update').catch(()=>{b.querySelector('span').textContent='Uppdateringen misslyckades. Försök igen senare.';});});
-    document.body.appendChild(b);
+  // ---- Uppdateringar: snabb kontroll vid start, tydlig knapp och säkert manuellt alternativ ----
+  const RELEASES_URL='https://github.com/Deashi03/Lagbok-desktop/releases/latest';
+  let updateRequest=null,lastUpdateCheck=0,installing=false;
+  const badge=()=>document.getElementById('top-version');
+  function updateBadge(status,version){
+    const b=badge();if(!b)return;
+    b.classList.toggle('update-checking',status==='checking');
+    b.classList.toggle('update-available',status==='available');
+    b.classList.toggle('update-error',status==='error');
+    b.disabled=status==='checking';
+    b.title=({checking:'Söker efter ny version …',available:'Version '+version+' finns – klicka för att kontrollera igen',
+      error:'Uppdateringskontroll misslyckades – klicka för att försöka igen',
+      current:'Sök efter uppdateringar'})[status]||'Sök efter uppdateringar';
+    b.setAttribute('aria-label',b.title);
   }
-  if(!panel)listen('update-available',e=>updateBanner(e.payload));
+  function updateBanner(version){
+    if(panel||!version)return;
+    const old=document.getElementById('update-banner');if(old)old.remove();
+    const wrap=document.createElement('aside');
+    wrap.id='update-banner';wrap.className='desktop-update-notice';wrap.setAttribute('role','status');
+    wrap.innerHTML='<div class="desktop-update-head"><strong>Lagbok Desktop '+esc(version)+' finns</strong>'+
+      '<button type="button" class="desktop-update-dismiss" aria-label="Stäng uppdateringsmeddelandet">×</button></div>'+
+      '<p>En ny version finns tillgänglig.</p><div class="desktop-update-actions">'+
+      '<button type="button" class="button primary" data-desktop-install-update>Installera och starta om</button>'+
+      '<a href="'+RELEASES_URL+'" target="_blank" rel="noopener noreferrer" class="button">Ladda ner manuellt ↗</a></div>'+
+      '<p class="desktop-update-feedback" aria-live="polite" hidden></p>';
+    wrap.querySelector('.desktop-update-dismiss').addEventListener('click',()=>wrap.remove());
+    wrap.querySelector('[data-desktop-install-update]').addEventListener('click',()=>{
+      if(installing)return;
+      installing=true;
+      const btn=wrap.querySelector('[data-desktop-install-update]');
+      const feedback=wrap.querySelector('.desktop-update-feedback');
+      btn.disabled=true;btn.textContent='Hämtar och installerar …';
+      feedback.hidden=false;feedback.textContent='Programmet installeras via Windows. Låt installationen slutföras.';
+      invoke('install_update').then(()=>{
+        // På Windows avslutar Tauri normalt processen vid installationen.
+        feedback.textContent='Installationen är startad. Om programmet inte startar om, öppna det via Start-menyn.';
+      }).catch(err=>{
+        console.error('Lagbok Desktop: installation failed',err);
+        feedback.textContent='Automatisk installation misslyckades. Använd Ladda ner manuellt.';
+        btn.disabled=false;btn.textContent='Försök igen';installing=false;
+      });
+    });
+    document.body.appendChild(wrap);
+    updateBadge('available',version);
+  }
+  // Förhindrar dubbla anrop vid samtidigt fokus, manuell kontroll och uppstart.
+  // En bakgrundskontroll görs vid start och högst en gång per timme när appen öppnas igen.
+  function checkForUpdates(manual=false){
+    if(panel||!app()||!app().ready())return Promise.resolve(null);
+    if(updateRequest)return updateRequest;
+    if(!manual&&Date.now()-lastUpdateCheck<60*60*1000)return Promise.resolve(null);
+    lastUpdateCheck=Date.now();
+    updateBadge('checking');
+    if(manual)app().toast('Söker efter ny version …');
+    updateRequest=invoke('check_update').then(version=>{
+      if(version){updateBanner(version);}
+      else if(!document.getElementById('update-banner')){
+        updateBadge('current');
+        if(manual)app().toast('Du har den senaste installerade versionen');
+      }else updateBadge('available');
+      return version;
+    }).catch(err=>{
+      console.error('Lagbok Desktop: update check failed',err);
+      updateBadge('error');
+      if(manual)app().toast('Uppdateringskontrollen misslyckades. Prova igen eller använd Ladda ner manuellt.');
+      return null;
+    }).finally(()=>{updateRequest=null;});
+    return updateRequest;
+  }
+  if(!panel){
+    // Versionsknappen är alltid klickbar i huvudmenyn, även när ingen uppdatering hittats.
+    const versionButton=badge();
+    if(versionButton)versionButton.addEventListener('click',()=>checkForUpdates(true));
+    listen('update-available',e=>{if(e.payload)updateBanner(e.payload);});
+    // Kontrollera direkt efter att katalogen är laddad; inte efter en fast väntan i Rust.
+    whenReady(()=>setTimeout(()=>checkForUpdates(),300));
+    const checkOnReturn=()=>{if(app()&&app().ready())checkForUpdates();};
+    window.addEventListener('focus',checkOnReturn);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkOnReturn();});
+  }
 
   // Efter en uppdatering: kort om vad som är nytt, en gång.
   const NEWS={'1.1':['Snabbpanelen är ett eget fönster som du kan flytta och ändra storlek på. Den minns var du lade den och öppnas där du var.',
@@ -3477,14 +3549,12 @@
         check('copyCitation','Kopiera lagtext med källa','Markerad lagtext får källan efter sig när du kopierar, t.ex. "(3 kap. 8 § brottsbalken)".',local.copyCitation)+
         check('closeToTray','Krysset gömmer appen vid klockan','Appen fortsätter att gå i bakgrunden så att kortkommandot alltid fungerar. Avsluta via ikonen vid klockan.',settings.closeToTray)+
         check('autostart','Starta med Windows','Startar dold vid inloggning, redo för kortkommandot.',settings.autostart)+
+        '<div class="list-row desktop-setting"><div class="grow"><div class="row-title">Programuppdateringar</div><div class="row-sub">Kontrolleras automatiskt när programmet öppnas. Du kan även installera manuellt.</div></div>'+
+        '<a href="'+RELEASES_URL+'" class="button" target="_blank" rel="noopener noreferrer">Nedladdningar ↗</a></div>'+
         '</div><div class="section-title">Kortkommandon i appen</div><div class="card-list key-list">'+
         KEYS.map(([k,d])=>'<div class="list-row"><kbd>'+esc(k)+'</kbd><div class="grow row-sub">'+esc(d)+'</div></div>').join('')+'</div>';
     },
-    checkUpdate(){
-      app().toast('Letar efter ny version …');
-      invoke('check_update').then(v=>{if(v)updateBanner(v);else app().toast('Du har den senaste versionen');})
-        .catch(()=>app().toast('Kunde inte nå uppdateringsservern'));
-    }
+    checkUpdate(){return checkForUpdates(true);}
   };
 })();
 ;

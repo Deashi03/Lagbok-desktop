@@ -193,10 +193,10 @@ async fn check_update(app: AppHandle) -> Result<Option<String>, String> {
 #[tauri::command]
 async fn install_update(app: AppHandle) -> Result<(), String> {
     let update = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| e.to_string())?;
-    if let Some(update) = update {
-        update.download_and_install(|_, _| {}, || {}).await.map_err(|e| e.to_string())?;
-        app.restart();
-    }
+    let update = update.ok_or_else(|| "Ingen ny version hittades. Prova att söka igen.".to_string())?;
+    update.download_and_install(|_, _| {}, || {}).await.map_err(|e| e.to_string())?;
+    // Windows-installationsprogrammet avslutar vanligtvis appen automatiskt.
+    app.restart();
     Ok(())
 }
 
@@ -310,16 +310,8 @@ pub fn run() {
                 show_main(&handle);
             }
 
-            // Leta efter en ny version en stund efter starten.
-            let updates = handle.clone();
-            tauri::async_runtime::spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_secs(8)).await;
-                if let Ok(updater) = updates.updater() {
-                    if let Ok(Some(update)) = updater.check().await {
-                        let _ = updates.emit("update-available", update.version);
-                    }
-                }
-            });
+            // Uppdateringskontroll startas av huvudfönstret så att resultatet inte
+            // förloras om webbdelen ännu inte har registrerat sin händelselyssnare.
             Ok(())
         })
         .on_window_event(|window, event| {
