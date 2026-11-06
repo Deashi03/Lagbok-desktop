@@ -633,3 +633,110 @@ kbd{font:600 12px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans
 .news-list{margin:4px 0 8px;padding-left:20px;line-height:1.5}
 .news-list li{margin:0 0 9px}
 @media (hover:hover){a.law-ref{cursor:pointer}.list-row:hover{background:var(--soft)}}
+
+/* ---------- Lagbok Desktop: skalbart arbetsutrymme 1.2 ----------
+   Endast Desktop, endast fönster >= 1100 px. Mobilappen och snabbpanelen påverkas inte.
+   Navigeringen flyttas visuellt till rubrikraden så hela fönsterhöjden kan användas.
+   Innehåll och sökning disponerar det faktiska fönsterutrymmet i stället för en telefonbredd. */
+@media (min-width:1100px){
+  html[data-wide="true"]:not([data-panel="true"]) .app-shell{
+    width:100%;max-width:none;height:100dvh;min-width:0;border:0;box-shadow:none;
+    display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:54px minmax(0,1fr);
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .topbar{
+    min-width:0;grid-column:1;grid-row:1;padding:5px 12px 5px clamp(22px,2.5vw,44px);
+    border-bottom:1px solid var(--border);
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .topbar .top-title{min-width:0;flex:1}
+  html[data-wide="true"]:not([data-panel="true"]) .bottom-nav{
+    grid-column:2;grid-row:1;position:relative;display:flex;align-items:center;justify-content:flex-end;
+    gap:5px;min-height:0;padding:5px clamp(20px,2.5vw,44px) 5px 0;
+    border-top:0;border-bottom:1px solid var(--border);
+    background:var(--panel);
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .bottom-nav button{
+    min-height:39px;padding:7px 12px;display:inline-flex;flex-direction:row;gap:8px;
+    font-size:12px;border-radius:10px;white-space:nowrap;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .bottom-nav button.active{background:var(--soft-green)}
+  html[data-wide="true"]:not([data-panel="true"]) .bottom-nav .nav-icon{font-size:19px;line-height:1}
+  html[data-wide="true"]:not([data-panel="true"]) #view{
+    min-width:0;min-height:0;grid-column:1/-1;grid-row:2;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .page{
+    width:100%;max-width:1800px;padding:clamp(24px,3vw,48px) clamp(24px,3.5vw,64px) 80px;
+    margin-inline:auto;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .page-title{font-size:clamp(29px,2.2vw,38px);letter-spacing:-.6px}
+  html[data-wide="true"]:not([data-panel="true"]) .intro{font-size:14px}
+  html[data-wide="true"]:not([data-panel="true"]) .searchbar-wrap{max-width:920px}
+  html[data-wide="true"]:not([data-panel="true"]) .searchbar-wrap .searchbox{min-height:55px}
+  html[data-wide="true"]:not([data-panel="true"]) .searchbar-wrap input{min-height:52px;font-size:17px}
+  html[data-wide="true"]:not([data-panel="true"]) .suggestions{max-height:min(48dvh,450px)}
+  html[data-wide="true"]:not([data-panel="true"]) .cat-section .card-list{column-gap:clamp(24px,3vw,52px)}
+  /* Lagtexten får hela lediga bredden mellan innehåll och kopplingar.
+     Begränsa enskilda textrader för läsbarhet, inte arbetsytans bredd. */
+  html[data-wide="true"]:not([data-panel="true"]) .wide-law{
+    width:100%;max-width:2400px;margin:0 auto;
+    grid-template-columns:clamp(235px,19vw,330px) minmax(0,1fr) clamp(240px,20vw,330px);
+    gap:clamp(16px,1.6vw,32px);padding:0 clamp(20px,2.8vw,48px);
+    align-items:start;justify-content:stretch;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .wide-law>.law-reader{
+    width:100%;min-width:0;max-width:none;margin:0;
+    padding:18px clamp(4px,1vw,16px) 78px;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .wide-law .paragraph-content{max-width:min(100%,82ch)}
+  html[data-wide="true"]:not([data-panel="true"]) .wide-toc,
+  html[data-wide="true"]:not([data-panel="true"]) .wide-side{
+    min-width:0;position:sticky;top:0;max-height:calc(100dvh - 56px);
+    overflow-y:auto;overscroll-behavior:contain;
+    padding-block:20px 32px;scrollbar-width:thin;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .wide-toc{padding-right:clamp(10px,1.5vw,24px)}
+  html[data-wide="true"]:not([data-panel="true"]) .wide-side{padding-left:clamp(12px,1.5vw,24px)}
+  /* Om en viss författning saknar kontextinformation får lagtexten hela restytan. */
+  html[data-wide="true"]:not([data-panel="true"]) .wide-law:has(>.wide-side:empty){
+    grid-template-columns:clamp(235px,19vw,330px) minmax(0,1fr);
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .wide-side:empty{display:none}
+  /* Fritextsökning: använd sidofältet för kategorifilter; resultaten tar restbredden.
+     Förenklar även tomma resultat, som annars blir en jättestor tom rektangel. */
+  html[data-wide="true"]:not([data-panel="true"]) #search-results{min-width:0}
+  html[data-wide="true"]:not([data-panel="true"]) #search-results>.card-list{max-width:1040px}
+  html[data-wide="true"]:not([data-panel="true"]) #text-results:has(>.search-filters){
+    display:grid;grid-template-columns:clamp(220px,20vw,284px) minmax(0,1fr);
+    column-gap:clamp(20px,2.5vw,44px);align-items:start;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) #text-results>.search-filters{
+    grid-column:1;grid-row:1/span 4;
+    display:flex;flex-direction:column;flex-wrap:nowrap;gap:4px;
+    padding:13px;margin:0;border:1px solid var(--border);border-radius:14px;
+    background:var(--soft);max-height:calc(100dvh - 240px);
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) #text-results>.search-filters .chip{
+    display:flex;align-items:center;justify-content:flex-start;width:100%;min-height:32px;
+    padding:7px 11px;text-align:left;white-space:normal;line-height:1.2;
+    border-radius:8px;font-size:12px;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) #text-results>.search-filters~*{grid-column:2;min-width:0}
+  html[data-wide="true"]:not([data-panel="true"]) #text-results>.empty{
+    padding:32px 26px;max-width:900px;text-align:left;
+  }
+  html[data-wide="true"]:not([data-panel="true"]) #text-results>.card-list{max-width:1100px}
+  html[data-wide="true"]:not([data-panel="true"]) #text-results .search-excerpt{font-size:13px;-webkit-line-clamp:3}
+  html[data-wide="true"]:not([data-panel="true"]) #text-results .row-title{font-size:15px}
+  html[data-wide="true"]:not([data-panel="true"]) .toast{bottom:24px}
+}
+/* I mellanstora fönster: två läsbara kolumner i stället för tre ihoptryckta.
+   Kopplingar och anteckningar nås fortfarande från respektive paragraf. */
+@media (min-width:1100px) and (max-width:1399px){
+  html[data-wide="true"]:not([data-panel="true"]) .wide-law{
+    grid-template-columns:clamp(230px,24vw,315px) minmax(0,1fr);
+  }
+  html[data-wide="true"]:not([data-panel="true"]) .wide-side{display:none}
+}
+@media (min-width:1900px){
+  html[data-wide="true"]:not([data-panel="true"]) .cat-section .card-list{columns:3}
+}
