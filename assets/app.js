@@ -122,9 +122,16 @@
   function iconSearch() {return '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16.2 16.2 5 5"/></svg>';}
   function searchBox(placeholder) {
     return '<form id="global-search" class="searchbar-wrap" role="search" autocomplete="off"><div class="searchbox">'+iconSearch()+
-      '<input id="query" name="q" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="'+html(placeholder||'Sök författning, begrepp eller lagrum')+'" value="'+attr(state.query)+'">'+
+      '<input id="query" name="q" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" enterkeyhint="search" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" placeholder="'+html(placeholder||'Sök författning, begrepp eller lagrum')+'" value="'+attr(state.query)+'">'+
       '<button type="button" class="search-clear" data-action="clear-search" aria-label="Rensa sökning">×</button></div>'+
-      '<div id="search-suggest" class="suggestions" role="listbox" hidden></div></form>';
+      '<div id="search-suggest" class="suggestions" role="listbox" hidden></div>'+
+      '<div id="quick-keypad" class="quick-keypad" role="group" aria-label="Snabbval av kapitel och paragraf" hidden>'+
+      '<div class="quick-keypad-head"><strong id="quick-keypad-status">Välj lagrum</strong><button type="button" data-action="jump-hide" aria-label="Använd vanligt tangentbord">ABC</button></div>'+
+      '<div class="quick-keypad-grid">'+
+      ['1','2','3','4','5','6','7','8','9',':','0','⌫'].map(k=>'<button type="button" data-action="'+(k===':'?'jump-colon':k==='⌫'?'jump-back':'jump-digit')+'" data-value="'+(k==='⌫'?'':k)+'">'+k+'</button>').join('')+
+      '</div><div class="quick-keypad-footer"><span>Paragraf med bokstav:</span>'+
+      ['a','b','c'].map(k=>'<button type="button" data-action="jump-letter" data-value="'+k+'">'+k+'</button>').join('')+
+      '<button type="button" class="quick-keypad-go" data-action="jump-go">Gå till →</button></div></div></form>';
   }
   function listRow(title,subtitle,go,badge) {
     return '<a class="list-row" href="' + attr(go) + '" data-link="1">' +
@@ -1013,7 +1020,7 @@
   function searchLawMatches(query){
     const n=norm(query);
     if(n.length<3)return searchCore.rankSuggestions(query,state.catalog,[],[],[]).filter(x=>x.type==='law').map(x=>x.law);
-    return state.catalog.filter(l=>norm([l.name,l.sfs,(l.aliases||[]).join(' ')].join(' ')).includes(n)).sort((a,b)=>Number(norm(b.name).startsWith(n))-Number(norm(a.name).startsWith(n)));
+    return state.catalog.filter(l=>norm([l.name,l.sfs,(l.aliases||[]).join(' '),(l.searchAliases||[]).join(' ')].join(' ')).includes(n)).sort((a,b)=>Number(norm(b.name).startsWith(n))-Number(norm(a.name).startsWith(n)));
   }
   function searchPage(){return catalogPage();}
   function resultsHtml(query){
@@ -1112,8 +1119,41 @@
       if(item)el.innerHTML=window.LagbokIndex.snippet(lawModel.resolve(item).current.text,result.tokens,html);
     }).catch(()=>{}));
   }
+
+  // Snabbnumerisk inmatning används bara på mobila pekskärmar, aldrig i Lagbok Desktop.
+  function jumpPadMeta(query){
+    if(window.LAGBOK_DESKTOP||!window.matchMedia||!window.matchMedia('(pointer: coarse) and (max-width: 860px)').matches)return null;
+    const m=/^([^\d:]+?)(?:\s+(\d{0,3}(?::\d{0,3}\s*[a-z]?)?))?$/i.exec(String(query||'').trim());
+    if(!m)return null;
+    const prefix=m[1].trim(),direct=searchCore.parseQuick(prefix,state.catalog,[]);
+    if(!direct||direct.type!=='law'||direct.chapter!=null)return null;
+    if(![...(direct.meta.aliases||[]),...(direct.meta.searchAliases||[])].some(a=>a.length<=16&&!/\s/.test(a)&&norm(a)===norm(prefix)))return null;
+    return {law:direct.meta,tail:m[2]||'',prefix};
+  }
+  function updateJumpPad(query){
+    const pad=$('#quick-keypad');if(!pad)return;
+    const info=jumpPadMeta(query);pad.hidden=!info;
+    if(!info)return;
+    const typed=info.tail,colon=typed.includes(':');
+    const title=$('#quick-keypad-status');
+    if(title)title.textContent=info.prefix+' · '+(info.law.chaptered?(colon?'Paragraf':'Kapitel'):'Paragraf')+(typed?' '+typed:'');
+    const colonButton=pad.querySelector('[data-action="jump-colon"]');
+    if(colonButton)colonButton.disabled=!info.law.chaptered||!typed||colon;
+    pad.querySelectorAll('[data-action="jump-letter"]').forEach(b=>b.disabled=!(colon||!info.law.chaptered)||!/\d$/.test(typed));
+  }
+  function jumpKey(action,value){
+    const field=$('#query');if(!field)return;
+    const info=jumpPadMeta(field.value);if(!info)return;
+    let next=field.value.trim();
+    if(action==='jump-digit'&&/^\d$/.test(value))next+=(info.tail?'':' ')+value;
+    if(action==='jump-colon'&&info.law.chaptered&&/^\d{1,3}$/.test(info.tail))next+=':';
+    if(action==='jump-letter'&&(info.tail.includes(':')||!info.law.chaptered)&&/\d$/.test(info.tail))next+=value;
+    if(action==='jump-back'&&info.tail)next=next.slice(0,-1).trimEnd();
+    field.value=next;onSearch(next);
+  }
   function onSearch(val){
     state.query=val;
+    updateJumpPad(val);
     const r=route();
     if(r.page==='fap'){
       const box=$('#fap-results');if(box)box.innerHTML=fapResults(state.fap.filter(f=>norm([f.name,f.id,f.code,(f.tags||[]).join(' ')].join(' ')).includes(norm(val))));
@@ -1921,7 +1961,8 @@
       const k=e.target.dataset.noteKey,v=e.target.value;clearTimeout(saveNote.t);saveNote.t=setTimeout(()=>saveNote(k,v,true),400);return;
     }
     if(e.target.id==='marks-query'){state.marksQuery=e.target.value;const box=$('#marks-list');if(box)box.innerHTML=marksHtml();return;}
-    if(e.target.id==='query'||e.target.id==='fap-query')onSearch(e.target.value);
+    if(e.target.id==='query'){onSearch(e.target.value);if(jumpPadMeta(e.target.value))e.target.blur();return;}
+    if(e.target.id==='fap-query')onSearch(e.target.value);
   });
   view.addEventListener('submit',async e=>{
     if(e.target.id==='find-form'){
@@ -1999,6 +2040,9 @@
     if(!btn)return;
     const a=btn.dataset.action,k=btn.dataset.key;
     if(a==='clear-search'){const field=$('#query');if(field){field.value='';onSearch('');field.focus();}return;}
+    if(a==='jump-digit'||a==='jump-colon'||a==='jump-letter'||a==='jump-back'){jumpKey(a,btn.dataset.value||'');return;}
+    if(a==='jump-go'){const f=$('#query');if(f)goQuick(f.value.trim()).then(done=>{if(!done)toast('Ange ett giltigt kapitel eller lagrum.');});return;}
+    if(a==='jump-hide'){const pad=$('#quick-keypad'),f=$('#query');if(pad)pad.hidden=true;if(f)f.focus();return;}
     if(a==='para-menu'){paraMenu(k);return;}
     if(a==='source-info'){sourceInfo();return;}
     if(a==='read-mode'){changeReaderMode(btn.dataset.mode);return;}
@@ -2138,6 +2182,9 @@
     const data=await resp.json();
     // Den kompakta katalogen lagrar lagarna i kolumner (scripts/build_indexes.js).
     if(data.rows&&data.cols)data.laws=data.rows.map(r=>{const o={};data.cols.forEach((c,i)=>{const v=r[i];if(v!=null)o[c]=data.values&&data.values[c]?data.values[c][v]:v;});return o;});
+    // Redaktionella smeknamn ligger separat från det genererade lagdataindexet.
+    const synonyms=await fetchJson('data/law-aliases.json').catch(()=>({}));
+    for(const law of data.laws||[])if(Array.isArray(synonyms[law.sfs]))law.searchAliases=synonyms[law.sfs];
     state.catalog=(data.laws||[]).filter(l=>l.available!==false);state.fap=data.fap||[];state.version=data.version||'';state.sections=data.sections||[];state.coverage=data.coverage||null;window.LAGBOK_GENERATED=data.generated;
     linksReady=false;
   }

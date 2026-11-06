@@ -19,14 +19,14 @@
     // Bara förkortningen, lagens namn eller SFS-numret ("PL", "brottsbalken", "1984:387") öppnar författningens början.
     const whole=norm(q),abbr=a=>/^[A-ZÅÄÖ][A-Za-zÅÄÖåäö]{0,7}$/.test(a)&&/[A-ZÅÄÖ].*[A-ZÅÄÖa-zåäö]|^[A-ZÅÄÖ]{2,}$/.test(a);
     // Konventioner i en lag nås också med sitt vedertagna namn ("Barnkonventionen", "Europakonventionen").
-    const exact=(laws||[]).filter(l=>norm(l.name)===whole||l.sfs===q||(l.aliases||[]).some(a=>(abbr(a)||l.articleChapter)&&norm(a)===whole));
+    const exact=(laws||[]).filter(l=>norm(l.name)===whole||l.sfs===q||(l.aliases||[]).some(a=>(abbr(a)||l.articleChapter)&&norm(a)===whole)||(l.searchAliases||[]).some(a=>norm(a)===whole));
     if(exact.length){
       exact.sort((a,b)=>Number(norm(b.name)===whole)-Number(norm(a.name)===whole)||Number(b.type==='lag')-Number(a.type==='lag'));
       return {type:'law',meta:exact[0],chapter:null,para:null};
     }
     const candidates=[];
     (laws||[]).forEach(l=>{
-      [l.name,l.sfs,...(l.aliases||[])].forEach(alias=>{
+      [l.name,l.sfs,...(l.aliases||[]),...(l.searchAliases||[])].forEach(alias=>{
         const prefix=String(alias||'').trim();
         if(!prefix||norm(prefix).length<2)return;
         if(q.toLocaleLowerCase('sv').startsWith(prefix.toLocaleLowerCase('sv'))){
@@ -78,7 +78,7 @@
     if(quick)add(1000,quick.type==='fap'?'fap':'quick','quick',quick.type==='fap'?quick.fap.name:quick.meta.name,
       'Direkt till '+input.trim(),{quick});
     for(const l of laws||[]){
-      const name=norm(l.name), aliases=(l.aliases||[]).map(norm);
+      const name=norm(l.name), aliases=[...(l.aliases||[]),...(l.searchAliases||[])].map(norm);
       let score=0;
       if(name===q||aliases.includes(q))score=950;
       else if(name.startsWith(q))score=810;

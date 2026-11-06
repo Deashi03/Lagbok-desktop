@@ -55,3 +55,8 @@ assert.deepEqual(lawOnly('EKMR'),['1994:1219',null,null]);
 assert.deepEqual(lawOnly('Barnkonventionen'),['2018:1197',null,null]);
 assert.deepEqual(lawOnly('PL 10'),['1984:387','0','10'],'vanliga lagar påverkas inte');
 console.log('Snabbkoder 1.6: lag utan lagrum och konventionsartiklar godkända');
+
+const aliasLaws=[...laws.map(x=>({...x})),{sfs:'2025:1062',name:'Lagen om polisens användning av skjutvapen',aliases:['skjutvapenlagen'],searchAliases:['skjutlagen','polisens skjutvapenlag'],chaptered:false}];
+assert.equal(parseQuick('skjutlagen',aliasLaws,[]).meta.sfs,'2025:1062');
+assert.equal(parseQuick('skjutlagen 3',aliasLaws,[]).para,'3');
+assert.equal(rankSuggestions('skjutlagen',aliasLaws,[],[],[])[0].title,'Lagen om polisens användning av skjutvapen');

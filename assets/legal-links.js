@@ -25,9 +25,20 @@
     ['lagen om omhändertagande av berusade personer','1976:511']
   ];
   let known=new Set();
+  let standaloneByLastWord=new Map();
   // Konventioner som gäller som svensk lag: [namn, id]; artiklar länkas ("artikel 8 i Europakonventionen").
   let treaties=[];
-  function sortTitles(){titles.sort((a,b)=>b[0].length-a[0].length);known=new Set(titles.map(t=>t[1]));}
+  function sortTitles(){
+    titles.sort((a,b)=>b[0].length-a[0].length);known=new Set(titles.map(t=>t[1]));
+    standaloneByLastWord=new Map();
+    for(const [name,id] of titles){
+      if(!/^[\p{L}\s-]+$/u.test(name))continue;
+      const word=name.split(/\s+/).pop();
+      if(!/(?:lagen|balken|förordningen|kungörelsen|ordningen|grundlagen)$/u.test(word))continue;
+      if(!standaloneByLastWord.has(word))standaloneByLastWord.set(word,[]);
+      standaloneByLastWord.get(word).push([name,id]);
+    }
+  }
   sortTitles();
   // Lägger till namn från katalogen: [{sfs,name,refNames}]
   function configure(laws){
@@ -280,6 +291,24 @@
       if(!exists(context,target.id,c,null))continue;
       refs.push({start,end,body:m[0],id:target.id,explicit:target.explicit,chapter:c,numbers:[],parts:[{num:null,start,end}]});
     }
+    // Fristående namn och SFS-hänvisningar, även utan paragrafnummer.
+    // Dessa saknar paragrafnummer och ändrar inte det paragrafbaserade baklänksindexet.
+    const standalone=(start,end,id)=>{
+      if(!known.has(id)||refs.some(r=>start<r.end&&end>r.start))return;
+      refs.push({start,end,body:s.slice(start,end),id,chapter:null,explicit:true,numbers:[],parts:[{num:null,start,end}]});
+    };
+    for(const m of s.matchAll(/(?<![\p{L}])(?:lagen|förordningen|kungörelsen)\s*\((\d{4}:\d+)\)/giu)){
+      standalone(m.index,m.index+m[0].length,m[1]);
+    }
+    for(const m of s.matchAll(/(?<![\p{L}])[\p{L}-]+(?:lagen|balken|förordningen|kungörelsen|ordningen|grundlagen)(?![\p{L}])/giu)){
+      const end=m.index+m[0].length,options=standaloneByLastWord.get(m[0].toLowerCase());
+      if(!options)continue;
+      const before=s.slice(Math.max(0,end-200),end);
+      for(const [name,id] of options){
+        const exact=new RegExp(name.replace(/\s+/g,'\\s+')+'$','iu').exec(before);
+        if(exact){standalone(end-exact[0].length,end,id);break;}
+      }
+    }
     return refs.sort((a,b)=>a.start-b.start);
   }
   function linkify(text,context){
@@ -292,8 +321,8 @@
         const href=context.href(ref.id,chapter,para);
         const range=part.to?' data-ref-to="'+escape(part.to)+'"':part.chapterTo?' data-ref-chapter-to="'+escape(part.chapterTo)+'"':'';
         out+='<a href="'+escape(href)+'" class="law-ref'+(range?' law-range':'')+'" data-ref="1" data-ref-sfs="'+escape(ref.id)+
-          '" data-ref-chapter="'+escape(chapter)+'"'+(para?' data-ref-para="'+escape(para)+'"':'')+range+
-          ' aria-label="Visa '+escape(ref.id+' '+chapter+(para?':'+para+(part.to?'–'+part.to:''):(part.chapterTo?'–'+part.chapterTo:'')+' kap.'))+'">'+escape(label)+'</a>';
+          '"'+(chapter==null?'':' data-ref-chapter="'+escape(chapter)+'"')+(para?' data-ref-para="'+escape(para)+'"':'')+range+
+          ' aria-label="Visa '+escape(chapter==null?ref.id:ref.id+' '+chapter+(para?':'+para+(part.to?'–'+part.to:''):(part.chapterTo?'–'+part.chapterTo:'')+' kap.'))+'">'+escape(label)+'</a>';
         at=part.end;
       }
       // Paragraftecknet följer med sista numret visuellt men länkas inte separat.

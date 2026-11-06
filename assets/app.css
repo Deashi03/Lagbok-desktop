@@ -592,6 +592,22 @@ html[data-theme="dark"] .fav-star-mini{color:#264D39}
 .future-notice{border-left:3px solid var(--wine);background:var(--soft);color:var(--text)}
 .preamble{font-style:italic;color:var(--secondary);font-size:14px;margin:8px 0 4px}
 
+/* 1.7 – numerisk snabbnavigering på iPhone (göms helt på desktop). */
+.quick-keypad[hidden]{display:none!important}
+.quick-keypad{margin:8px 0 4px;padding:12px;background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:0 7px 22px #00000013}
+.quick-keypad-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;color:var(--text)}
+.quick-keypad-head strong{font-size:14px;font-weight:700}
+.quick-keypad-head button{background:var(--soft);color:var(--accent);border:1px solid var(--border);padding:8px 12px;border-radius:9px;font-weight:700}
+.quick-keypad-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.quick-keypad-grid button{height:47px;border:1px solid var(--border);border-radius:10px;background:var(--soft);color:var(--text);font-size:23px;font-weight:650;touch-action:manipulation}
+.quick-keypad-grid button:active{background:var(--accent);color:white}
+.quick-keypad-grid button.quick-keypad-colon{background:var(--accent);color:#fff;font-size:24px}
+.quick-keypad-grid button:disabled,.quick-keypad-footer button:disabled{opacity:.35}
+.quick-keypad-footer{display:flex;gap:7px;align-items:center;margin-top:9px;flex-wrap:wrap}
+.quick-keypad-footer span{font-size:12px;color:var(--secondary)}
+.quick-keypad-footer button{min-height:37px;min-width:35px;padding:4px 8px;background:var(--soft);border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:650}
+.quick-keypad-footer .quick-keypad-go{flex:1;min-width:100px;background:var(--accent);color:#fff;border:0}
+
 /* ---------- Lagbok Desktop ---------- */
 /* Katalogens lagblock: osynliga i smal layout, rutor i ett rutnät i bred layout. */
 .law-block{display:contents}

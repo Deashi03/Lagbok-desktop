@@ -38,7 +38,7 @@ assert.match(linkify('Om brott, som i 7--9 §§ sägs',withMembers),/>7--9<\/a> 
 const chap=linkify('ett tvångsmedel enligt 24-28 kap., om inte',{...withMembers,sfs:'1942:740',chapter:'23'});
 assert.match(chap,/data-ref-chapter="24" data-ref-chapter-to="28"[^>]*>24-28<\/a> kap\./,'kapitelintervall länkas');
 assert.deepEqual(parseRefs('enligt 24–28 kap.',{...withMembers,sfs:'1942:740',chapter:'23'})[0].chapters,['24','25','26','27','28']);
-assert.equal((linkify('3 och 4 kap. brottsbalken',{...more,sfs:'1942:740',chapter:'23'}).match(/class="law-ref"/g)||[]).length,2,'kapitel i uppräkning länkas var för sig');
+assert.equal((linkify('3 och 4 kap. brottsbalken',{...more,sfs:'1942:740',chapter:'23'}).match(/data-ref-chapter="/g)||[]).length,2,'kapitel i uppräkning länkas var för sig');
 console.log('Juridiska länkar: intervall godkända');
 
 // 0.6: uppräkningar med ett paragraftecken, listor, kapitel, stycken och "samma balk"
@@ -53,7 +53,21 @@ const chain=linkify('Bestämmelserna i 21 kap. 5-8 §§, 9 § tredje stycket, 10
 assert.match(chain,/data-ref-chapter="21" data-ref-para="9"/);
 assert.match(chain,/data-ref-chapter="21" data-ref-para="10a"/);
 const same=linkify('insyn i 23 kap. 18 § rättegångsbalken och 23 kap. 21 a § samma balk',{...all,sfs:'1964:167',chapter:'0'});
-assert.equal((same.match(/data-ref-sfs="1942:740"/g)||[]).length,2);
+assert.equal((same.match(/data-ref-sfs="1942:740" data-ref-chapter="23" data-ref-para=/g)||[]).length,2);
 assert.doesNotMatch(linkify('1 kap. 1 och 7 §§ tryckfrihetsförordningen',{...all,sfs:'2009:400'}),/class="law-ref"/);
 assert.match(linkify('Ett kvarhållande enligt 8 a § får',all),/>8 a §<\/a>/);
 console.log('Juridiska länkar 0.6: uppräkningar, kapitel, stycken och samma balk godkända');
+
+const {configure}=require('../assets/legal-links.js');
+configure([{sfs:'1962:700',name:'Brottsbalken',type:'lag'},
+ {sfs:'1984:387',name:'Polislagen',type:'lag'},
+ {sfs:'2019:32',name:'Kustbevakningslagen',type:'lag'},
+ {sfs:'2024:710',name:'Tullbefogenhetslagen',type:'lag'},
+ {sfs:'2025:1062',name:'Lagen om polisens användning av skjutvapen',type:'lag'}]);
+const missing='I polislagen (1984:387), kustbevakningslagen (2019:32) och tullbefogenhetslagen (2024:710). För polismän gäller i stället lagen\n(2025:1062) om polisens användning av skjutvapen.';
+const refs=parseRefs(missing,{sfs:'1962:700',chapter:'24',href,exists:()=>true});
+for(const id of ['1984:387','2019:32','2024:710','2025:1062']){
+ assert.ok(refs.some(r=>r.id===id&&r.chapter===null),id+' fristående laghänvisning');
+ assert.match(linkify(missing,{sfs:'1962:700',chapter:'24',href,exists:()=>true}),new RegExp('data-ref-sfs="'+id+'"'));
+}
+assert.doesNotMatch(linkify('Lag (2017:442).',{sfs:'1962:700',chapter:'24',href,exists:()=>true}),/class="law-ref"/);
