@@ -3188,6 +3188,20 @@
   const local=(()=>{let v={};try{v=JSON.parse(localStorage.getItem('lagboken-desktop')||'{}');}catch(_){}return v;})();
   const saveLocal=()=>{try{localStorage.setItem('lagboken-desktop',JSON.stringify(local));}catch(_){}};
   if(local.copyCitation===undefined)local.copyCitation=true;
+  // En timmes inaktivitet räknas från faktisk användning, i både huvudfönster och snabbpanel.
+  // Egen nyckel: undviker att två Windows-fönster skriver över varandras inställningar.
+  const LAST_ACTIVITY='lagboken-desktop-last-activity',IDLE_MS=60*60*1000;
+  let lastActivityWrite=0;
+  const lastActivity=()=>{try{return Number(localStorage.getItem(LAST_ACTIVITY))||0;}catch(_){return 0;}};
+  const markActivity=(force=false)=>{
+    const now=Date.now();
+    if(!force&&now-lastActivityWrite<1000)return;
+    lastActivityWrite=now;
+    try{localStorage.setItem(LAST_ACTIVITY,String(now));}catch(_){}
+  };
+  for(const type of ['pointerdown','keydown','wheel','touchstart'])
+    document.addEventListener(type,()=>markActivity(),{passive:true,capture:true});
+  let goPanelSearch=null;
 
   // Länkar till webbsidor och e-post öppnas i Windows standardprogram, inte inne i appen.
   document.addEventListener('click',e=>{
@@ -3227,29 +3241,70 @@
       close.addEventListener('click',()=>invoke('hide_panel').catch(()=>{}));
       actions.append(open,close);
     }
-    // Panelen visar samma sida som när man lämnade den. Bara på startsidan får sökfältet markören direkt.
-    // Var något markerat i programmet man stod i öppnas det lagrummet i stället.
-    const shown=lookup=>whenReady(()=>{
-      if(lookup){app().goQuick(lookup).then(ok=>{if(!ok)focusStart();});return;}
-      focusStart();
-    });
-    const focusStart=()=>{
-      if(!['catalog','home','search'].includes(app().route().page))return;
-      let n=0;const tryFocus=()=>{const q=document.getElementById('query');
-        if(q&&document.activeElement===q&&document.hasFocus())return;
-        if(q&&!sheetOpen())q.focus({preventScroll:true});if(++n<8)setTimeout(tryFocus,80);};
-      tryFocus();
+    // Stäng alltid ett kvarlämnat sökblad när panelen öppnas på nytt.
+    // Efter en timmes inaktivitet: katalogen med tomt, fokuserat sökfält.
+    // Annars: exakt den vy användaren lämnade, utan ett påtvingat sökblad.
+    const focusCatalog=(clear=false)=>{
+      let tries=0;
+      const focus=()=>{
+        if(!['catalog','home','search'].includes(app().route().page))return;
+        const q=document.getElementById('query');
+        if(!q){if(++tries<12)setTimeout(focus,80);return;}
+        if(clear){
+          const button=document.querySelector('[data-action="clear-search"]');
+          if(button)button.click(); // Rensar även appens sökstatus, inte bara inputfältet.
+          clear=false;
+        }
+        if(sheetOpen())return;
+        q.focus({preventScroll:true});
+        if(document.activeElement!==q&&++tries<12)setTimeout(focus,80);
+      };
+      setTimeout(focus,0); // Låt katalogen renderas innan sökfältet får fokus.
     };
-    listen('panel-shown',e=>shown(e.payload));
-    // Reserv om sidan läses in först när panelen visas första gången (då hinner signalen gå förbi).
-    whenReady(()=>{if(document.visibilityState==='visible')focusStart();});
-    window.addEventListener('focus',()=>{if(!window.__panelFocused){window.__panelFocused=true;whenReady(focusStart);}});
+    goPanelSearch=()=>{
+      if(!app()||!app().ready())return;
+      app().closeSheet();
+      app().navigate('#/catalog');
+      focusCatalog();
+    };
+    // Panelens sökknapp och Ctrl + K använder katalogens inbyggda sökfält,
+    // aldrig det stora "Gå till eller sök"-bladet. Huvudfönstret påverkas inte.
+    document.addEventListener('click',e=>{
+      if(!e.target.closest||!e.target.closest('#in-law-search'))return;
+      e.preventDefault();e.stopPropagation();
+      goPanelSearch();
+    },true);
+
+    let shownEventReceived=false,showSequence=0;
+    const shown=lookup=>{
+      const seq=++showSequence;
+      whenReady(()=>{
+        if(seq!==showSequence)return;
+        const now=Date.now(),last=lastActivity();
+        const idle=!last||last>now||now-last>=IDLE_MS;
+        app().closeSheet();
+        markActivity(true);
+        if(lookup){
+          app().goQuick(lookup).then(ok=>{if(!ok){app().toast('Hittade inte '+lookup);if(idle){app().navigate('#/catalog',true);focusCatalog(true);}}});
+          return;
+        }
+        if(idle){
+          app().navigate('#/catalog',true);
+          focusCatalog(true);
+        }else if(['catalog','home','search'].includes(app().route().page)){
+          focusCatalog();
+        }
+      });
+    };
+    listen('panel-shown',e=>{shownEventReceived=true;shown(e.payload);});
+    // Första öppningen: Rust kan visa fönstret innan dess JavaScript har laddats.
+    whenReady(()=>{if(document.visibilityState==='visible'&&!shownEventReceived){shownEventReceived=true;shown(null);}});
   }
 
   // ---- Kortkommandon i appen (huvudfönstret och panelen) ----
   document.addEventListener('keydown',e=>{
     const ctrl=e.ctrlKey&&!e.altKey&&!e.metaKey,a=app();if(!a)return;
-    if(ctrl&&!e.shiftKey&&e.key.toLowerCase()==='k'){e.preventDefault();a.closeSheet();const b=document.getElementById('in-law-search');if(b)b.click();return;}
+    if(ctrl&&!e.shiftKey&&e.key.toLowerCase()==='k'){e.preventDefault();if(panel&&goPanelSearch){goPanelSearch();return;}a.closeSheet();const b=document.getElementById('in-law-search');if(b)b.click();return;}
     if(ctrl&&!e.shiftKey&&e.key.toLowerCase()==='f'){
       e.preventDefault();a.closeSheet();
       const find=document.getElementById('find-button'),open=document.getElementById('find-input');

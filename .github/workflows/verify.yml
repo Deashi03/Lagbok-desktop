@@ -34,6 +34,7 @@ jobs:
           node tests/test_relations.js
           node tests/test_search_index.js
           node tests/test_highlights.js
+          node tests/test_panel_idle.js
       - name: Granska lagtexten
         run: |
           python scripts/audit.py
