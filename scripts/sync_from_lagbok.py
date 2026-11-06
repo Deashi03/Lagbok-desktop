@@ -29,6 +29,7 @@ KEEP = {
     'scripts/sync_from_lagbok.py', 'tests/test_upstream_sync.py',
 }
 MAX_TEXT_MERGE_BYTES = 2 * 1024 * 1024
+DESKTOP_CSS_MARKER = b'/* ---------- Lagbok Desktop ---------- */'
 
 
 def git(*args: str, input_data: bytes | None = None, check: bool = True) -> subprocess.CompletedProcess:
@@ -53,6 +54,21 @@ def is_shared(path: str) -> bool:
 
 
 def merge_text(local: bytes, base: bytes, newer: bytes, path: str) -> bytes:
+    # Desktop-specific CSS is deliberately isolated after an explicit marker.
+    # Treat that section as an overlay, so upstream CSS additions at EOF can
+    # still be mirrored without a spurious conflict with the desktop footer.
+    if path == 'assets/app.css' and DESKTOP_CSS_MARKER in local:
+        if DESKTOP_CSS_MARKER in base or DESKTOP_CSS_MARKER in newer:
+            raise ValueError('Desktop CSS marker also present in upstream; manual review needed')
+        shared, desktop_footer = local.split(DESKTOP_CSS_MARKER, 1)
+        # CSS shared part may also have Desktop-only changes. Diff3 preserves
+        # those edits while applying independent upstream changes.
+        if shared.rstrip(b'\r\n') == base.rstrip(b'\r\n'):
+            merged = newer
+        else:
+            merged = merge_text(shared.rstrip(b'\r\n') + b'\n', base, newer,
+                                'assets/app.css.shared')
+        return merged.rstrip(b'\r\n') + b'\n\n' + DESKTOP_CSS_MARKER + desktop_footer
     # The desktop app has its own independent version. A mobile version bump
     # must not cause a merge conflict or change the desktop release version.
     if path == 'assets/app.js':

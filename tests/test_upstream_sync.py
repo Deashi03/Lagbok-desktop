@@ -30,6 +30,15 @@ class SyncSafetyTests(unittest.TestCase):
         self.assertIn(b'updated shared', merged)
         self.assertIn(b'desktop-only', merged)
 
+    def test_desktop_css_overlay_survives_upstream_append(self):
+        base = b'body { color: black; }\n'
+        desktop = base + b'\n/* ---------- Lagbok Desktop ---------- */\n.wide { width: 80%; }\n'
+        upstream = base + b'nav { display: grid; }\n'
+        merged = sync.merge_text(desktop, base, upstream, 'assets/app.css')
+        self.assertIn(b'nav { display: grid; }', merged)
+        self.assertIn(b'.wide { width: 80%; }', merged)
+        self.assertEqual(merged.count(b'/* ---------- Lagbok Desktop ---------- */'), 1)
+
     def test_overlap_refuses_to_overwrite_desktop(self):
         base = b'header\nshared line\nfooter\n'
         desktop = b'header\ndesktop version\nfooter\n'
