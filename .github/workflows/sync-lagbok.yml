@@ -2,6 +2,10 @@ name: Spegla Lagbok till Desktop
 # Enkelriktad: Deashi03/Lagbok -> Deashi03/Lagbok-desktop. Skriver ALDRIG till Lagbok.
 # Desktop-specifika filer och anpassningar bevaras via trevägsmerge.
 on:
+  # En uppdatering av denna synkroniseringsfil startar speglingen direkt.
+  push:
+    branches: [main]
+    paths: ['.github/workflows/sync-lagbok.yml']
   schedule:
     - cron: '17 */4 * * *'
   workflow_dispatch:
