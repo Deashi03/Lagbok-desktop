@@ -9,7 +9,7 @@ Lagbok Desktop är en egen produkt, skild från mobilappen [Lagboken](https://gi
 2. Dubbelklicka på filen. Appen installeras för din användare, så ingen administratörsbehörighet behövs.
 3. Första gången kan Windows visa "Windows skyddade datorn", eftersom installationsfilen inte är kodsignerad. Klicka **Mer information** och sedan **Kör ändå**.
 
-Appen uppdaterar sig själv: när en ny version finns visas en rad överst, och ett klick installerar den och startar om appen. Avinstallera via Inställningar → Appar.
+Appen kontrollerar efter uppdateringar direkt när huvudfönstret har startat och vid återkomst efter minst en timme. Klicka på versionsnumret överst för att söka manuellt. Om en ny version finns visas en tydlig ruta med **Installera och starta om** och **Ladda ner manuellt**. Nedladdningar finns även under Inställningar → Windows. Vid misslyckad automatisk installation kan en installationsfil hämtas från GitHub Releases. Avinstallera via Inställningar → Appar.
 
 ## Windows-funktioner
 - **Snabbpanel, Ctrl + Alt + L.** Kortkommandot fungerar var du än är i Windows. Skriv till exempel `BrB 3:8` och tryck Enter. Esc eller samma kortkommando döljer panelen igen. ⤢ öppnar det som visas i huvudfönstret.

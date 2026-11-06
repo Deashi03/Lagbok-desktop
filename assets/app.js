@@ -1,7 +1,7 @@
 /* Lagbok Desktop: Lagboken som Windows-app (Tauri). Samma läsapp som Lagboken; Windows-delarna finns i desktop.js och src-tauri. */
 (function () {
   'use strict';
-  const APP_VERSION='1.1.0';
+  const APP_VERSION='1.1.3';
   // Lagbok Desktop körs i Windows-skalet; i en vanlig webbläsare (testerna) beter sig appen som Lagboken.
   const DESKTOP=!!window.LAGBOK_DESKTOP;
   const APP_NAME='Lagbok Desktop';
