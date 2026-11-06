@@ -24,6 +24,7 @@ function mount({minutesIdle=null,page='law',query='gammal sökning',lookupOk=tru
     visibilityState:'hidden',
     activeElement:null,
     hasFocus:()=>true,
+    createElement:()=>({setAttribute(){},addEventListener(){}}),
     addEventListener:(name,fn)=>on(docs,name,fn),
     getElementById(id){
       if(id==='sheet')return sheet;
